@@ -1,0 +1,9 @@
+scenarioLabel,nVo,nVi,nBe,nBk
+Baseline,8,8,8,8
+VO-heavy,20,4,4,4
+BK-heavy,4,4,4,20
+InvertedPyramid,2,4,10,16
+Pyramid,4,8,8,12
+HighPriorityPolarized,14,14,2,2
+LowPriorityPolarized,2,2,14,14
+ExtremeSingleStation,1,1,1,29

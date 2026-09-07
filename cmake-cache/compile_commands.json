@@ -9565,9 +9565,21 @@
 },
 {
   "directory": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache",
+  "command": "/usr/bin/c++ -DHAVE_LIBXML2 -DHAVE_SQLITE3 -DNS3_ASSERT_ENABLE -DNS3_BUILD_PROFILE_DEBUG -DNS3_LOG_ENABLE -DPROJECT_SOURCE_PATH=\\\"/Users/neharionaalice/Downloads/ns-3.48\\\" -D__APPLE__ -I/Users/neharionaalice/Downloads/ns-3.48/build/include -isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2  -stdlib=libc++ -O2 -g -DNDEBUG -std=c++23 -arch arm64 -fPIE   -fcolor-diagnostics -Xclang -fno-pch-timestamp -Wall -Wpedantic -Winvalid-pch -Xclang -include-pch -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx -o scratch/CMakeFiles/scratch_edca-ratio-validation.dir/edca-ratio-validation.cc.o -c /Users/neharionaalice/Downloads/ns-3.48/scratch/edca-ratio-validation.cc",
+  "file": "/Users/neharionaalice/Downloads/ns-3.48/scratch/edca-ratio-validation.cc",
+  "output": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/scratch/CMakeFiles/scratch_edca-ratio-validation.dir/edca-ratio-validation.cc.o"
+},
+{
+  "directory": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache",
   "command": "/usr/bin/c++ -DHAVE_LIBXML2 -DHAVE_SQLITE3 -DNS3_ASSERT_ENABLE -DNS3_BUILD_PROFILE_DEBUG -DNS3_LOG_ENABLE -DPROJECT_SOURCE_PATH=\\\"/Users/neharionaalice/Downloads/ns-3.48\\\" -D__APPLE__ -I/Users/neharionaalice/Downloads/ns-3.48/build/include -isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2  -stdlib=libc++ -O2 -g -DNDEBUG -std=c++23 -arch arm64 -fPIE   -fcolor-diagnostics -Xclang -fno-pch-timestamp -Wall -Wpedantic -Winvalid-pch -Xclang -include-pch -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx -o scratch/CMakeFiles/scratch_scratch-simulator.dir/scratch-simulator.cc.o -c /Users/neharionaalice/Downloads/ns-3.48/scratch/scratch-simulator.cc",
   "file": "/Users/neharionaalice/Downloads/ns-3.48/scratch/scratch-simulator.cc",
   "output": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/scratch/CMakeFiles/scratch_scratch-simulator.dir/scratch-simulator.cc.o"
+},
+{
+  "directory": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache",
+  "command": "/usr/bin/c++ -DHAVE_LIBXML2 -DHAVE_SQLITE3 -DNS3_ASSERT_ENABLE -DNS3_BUILD_PROFILE_DEBUG -DNS3_LOG_ENABLE -DPROJECT_SOURCE_PATH=\\\"/Users/neharionaalice/Downloads/ns-3.48\\\" -D__APPLE__ -I/Users/neharionaalice/Downloads/ns-3.48/build/include -isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2  -stdlib=libc++ -O2 -g -DNDEBUG -std=c++23 -arch arm64 -fPIE   -fcolor-diagnostics -Xclang -fno-pch-timestamp -Wall -Wpedantic -Winvalid-pch -Xclang -include-pch -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx.pch -Xclang -include -Xclang /Users/neharionaalice/Downloads/ns-3.48/cmake-cache/CMakeFiles/stdlib_pch_exec.dir/cmake_pch.hxx -o scratch/CMakeFiles/scratch_single-sta-multi-ac-edca.dir/single-sta-multi-ac-edca.cc.o -c /Users/neharionaalice/Downloads/ns-3.48/scratch/single-sta-multi-ac-edca.cc",
+  "file": "/Users/neharionaalice/Downloads/ns-3.48/scratch/single-sta-multi-ac-edca.cc",
+  "output": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/scratch/CMakeFiles/scratch_single-sta-multi-ac-edca.dir/single-sta-multi-ac-edca.cc.o"
 },
 {
   "directory": "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache",

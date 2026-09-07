@@ -7,8 +7,10 @@ set(OLD_GLOB
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/.DS_Store"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/CMakeLists.txt"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/edca-baseline-validation.cc"
+  "/Users/neharionaalice/Downloads/ns-3.48/scratch/edca-ratio-validation.cc"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/nested-subdir"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/scratch-simulator.cc"
+  "/Users/neharionaalice/Downloads/ns-3.48/scratch/single-sta-multi-ac-edca.cc"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/subdir"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/two-nodes.cc"
   )
@@ -37,7 +39,9 @@ endif()
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/neharionaalice/Downloads/ns-3.48/scratch/[^.]*.cc")
 set(OLD_GLOB
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/edca-baseline-validation.cc"
+  "/Users/neharionaalice/Downloads/ns-3.48/scratch/edca-ratio-validation.cc"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/scratch-simulator.cc"
+  "/Users/neharionaalice/Downloads/ns-3.48/scratch/single-sta-multi-ac-edca.cc"
   "/Users/neharionaalice/Downloads/ns-3.48/scratch/two-nodes.cc"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
