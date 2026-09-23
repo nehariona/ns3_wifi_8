@@ -1147,6 +1147,11 @@ FrameExchangeManager::DropMpduIfRetryLimitReached(Ptr<WifiPsdu> psdu)
         DequeueMpdu(mpdu);
     }
 
+    if (droppedMpdu && m_dcf)
+    {
+        m_dcf->ResetPsrc(m_linkId); // P-EDCA: a dropped frame also clears PSRC
+    }
+
     return droppedMpdu;
 }
 
@@ -1721,6 +1726,7 @@ FrameExchangeManager::ReceivedNormalAck(Ptr<WifiMpdu> mpdu,
     if (m_dcf)
     {
         m_dcf->ResetCw(m_linkId);
+        m_dcf->ResetPsrc(m_linkId);
     }
     else
     {

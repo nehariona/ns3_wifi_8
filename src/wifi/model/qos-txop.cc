@@ -57,6 +57,16 @@ QosTxop::GetTypeId()
                           BooleanValue(true),
                           MakeBooleanAccessor(&QosTxop::m_useExplicitBarAfterMissedBlockAck),
                           MakeBooleanChecker())
+            .AddAttribute("PEdcaQsrcThreshold",
+                          "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (0 is reserved).",
+                          UintegerValue(1),
+                          MakeUintegerAccessor(&QosTxop::m_pedcaQsrcThr),
+                          MakeUintegerChecker<uint8_t>(1))
+            .AddAttribute("PEdcaPsrcThreshold",
+                          "P-EDCA: PSRC limit; a DS-CTS may be sent only while PSRC is below it.",
+                          UintegerValue(1),
+                          MakeUintegerAccessor(&QosTxop::m_pedcaPsrcThr),
+                          MakeUintegerChecker<uint8_t>(1, 4))
             .AddAttribute("AddBaResponseTimeout",
                           "The timeout to wait for ADDBA response after the Ack to "
                           "ADDBA request is received.",
@@ -269,6 +279,13 @@ QosTxop::GetMaxCw(uint8_t linkId) const
     }
     NS_ASSERT(!EdcaDisabled(linkId));
     return GetLink(linkId).muCwMax;
+}
+
+bool
+QosTxop::PedcaEligible(uint8_t linkId)
+{
+    return m_mac->GetPEdcaSupported() && m_ac == AC_VO && HasFramesToTransmit(linkId) &&
+           GetStaRetryCount(linkId) >= m_pedcaQsrcThr && GetPsrc(linkId) < m_pedcaPsrcThr;
 }
 
 uint8_t

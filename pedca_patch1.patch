@@ -3,8 +3,7 @@ index 1c19a2f..0ea961f 100644
 --- a/src/wifi/model/frame-exchange-manager.cc
 +++ b/src/wifi/model/frame-exchange-manager.cc
 @@ -1147,6 +1147,11 @@ FrameExchangeManager::DropMpduIfRetryLimitReached(Ptr<WifiPsdu> psdu)
-         DequeueMpdu(mpdu);
-     }
+         DequeueMpdu(mpdu);  //basically psrc     }
  
 +    if (droppedMpdu && m_dcf)
 +    {

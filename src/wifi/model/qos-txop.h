@@ -385,6 +385,14 @@ class QosTxop : public Txop
      */
     uint32_t GetMinCw(uint8_t linkId) const override;
     /**
+     * Check whether this AC may currently start P-EDCA (send a DS-CTS) on the given link:
+     * P-EDCA enabled at the MAC, AC_VO, frames queued, QSRC >= threshold, PSRC < limit.
+     * Does not modify state (HasFramesToTransmit() is non-const).
+     * @param linkId the ID of the given link
+     * @return true if P-EDCA eligible
+     */
+    bool PedcaEligible(uint8_t linkId);
+    /**
      * For the given link, return the maximum contention window size from the
      * EDCA Parameter Set or the MU EDCA Parameter Set, depending on whether the
      * MU EDCA Timer is running or not.
@@ -450,6 +458,8 @@ class QosTxop : public Txop
      */
     bool IsQosOldPacket(Ptr<const WifiMpdu> mpdu);
 
+    uint8_t m_pedcaQsrcThr{1};  //!< P-EDCA QSRC threshold
+    uint8_t m_pedcaPsrcThr{1};  //!< P-EDCA PSRC threshold
     AcIndex m_ac;                     //!< the access category
     Ptr<BlockAckManager> m_baManager; //!< the block ack manager
     uint8_t m_blockAckThreshold; /**< the block ack threshold (use BA mechanism if number of packets
