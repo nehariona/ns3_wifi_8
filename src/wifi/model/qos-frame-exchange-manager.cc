@@ -165,6 +165,40 @@ QosFrameExchangeManager::CancelPifsRecovery()
     NotifyChannelReleased(m_edca);
 }
 
+void
+QosFrameExchangeManager::SendPedcaDsCts(Ptr<QosTxop> edca)
+{
+    NS_LOG_FUNCTION(this << edca);
+
+    WifiMacHeader dsCts;
+    dsCts.SetType(WIFI_MAC_CTL_CTS);
+    dsCts.SetDsNotFrom();
+    dsCts.SetDsNotTo();
+    dsCts.SetNoMoreFragments();
+    dsCts.SetNoRetry();
+    dsCts.SetAddr1(edca->GetPedcaDsCtsAddress());
+    dsCts.SetDuration(edca->GetPedcaStage2Window());
+
+    // Not a response to an RTS, so there is no RTS TxVector to derive a rate from; use the same
+    // fallback as SendCfEndIfNeeded() for a control frame addressed to no specific station.
+    // Your baseline's rate here may not match the draft's DS-CTS rate; verify against the draft.
+    WifiTxVector dsCtsTxVector =
+        GetWifiRemoteStationManager()->GetRtsTxVector(dsCts.GetAddr1(), m_allowedWidth);
+
+    auto mpdu = Create<WifiMpdu>(Create<Packet>(), dsCts);
+    auto txDuration =
+        WifiPhy::CalculateTxDuration(mpdu->GetSize(), dsCtsTxVector, m_phy->GetPhyBand());
+
+    ForwardMpduDown(mpdu, dsCtsTxVector);
+
+    // Step 3: a DS-CTS is not a failed data attempt, so PSRC is incremented directly rather than
+    // through UpdateFailedCw(); step 5/6: open Stage 2 on this station and schedule its exit.
+    edca->IncrementPsrc(m_linkId);
+    edca->EnterPedcaStage2(m_linkId, edca->GetPedcaStage2Window());
+
+    Simulator::Schedule(txDuration, &QosFrameExchangeManager::NotifyChannelReleased, this, edca);
+}
+
 bool
 QosFrameExchangeManager::StartTransmission(Ptr<Txop> edca, MHz_u allowedWidth)
 {
@@ -186,6 +220,15 @@ QosFrameExchangeManager::StartTransmission(Ptr<Txop> edca, MHz_u allowedWidth)
 
     m_allowedWidth = allowedWidth;
     auto qosTxop = StaticCast<QosTxop>(edca);
+
+    if (qosTxop->IsPedcaDsCtsPending(m_linkId))
+    {
+        // We won contention under DS-CTS access parameters: send the DS-CTS itself rather than
+        // a data frame. This TXOP is entirely consumed by the DS-CTS transmission.
+        SendPedcaDsCts(qosTxop);
+        return true;
+    }
+
     return StartTransmission(qosTxop, qosTxop->GetTxopLimit(m_linkId));
 }
 
@@ -193,6 +236,17 @@ bool
 QosFrameExchangeManager::StartTransmission(Ptr<QosTxop> edca, Time txopDuration)
 {
     NS_LOG_FUNCTION(this << edca << txopDuration);
+
+    if (edca->IsPedcaStage2(m_linkId))
+    {
+        // This AC_VO instance won contention inside its own Stage-2 window: it must stay
+        // "in Stage 2" for WifiDefaultProtectionManager::GetPsduProtection() to force RTS/CTS
+        // below, so the actual exit is deferred to TransmissionSucceeded()/TransmissionFailed(),
+        // once that RTS/CTS + data exchange concludes and the RTS's own Duration field has
+        // taken over extending NAV. Per 802.11 the DS-CTS's own NAV/window cannot be revoked
+        // early, so this is the first point after committing that we can safely clean up.
+        NS_LOG_DEBUG("Won access inside Stage 2: sending RTS/CTS + data");
+    }
 
     if (m_pifsRecoveryEvent.IsPending())
     {
@@ -628,6 +682,14 @@ QosFrameExchangeManager::TransmissionSucceeded()
         return;
     }
 
+    if (m_edca->IsPedcaStage2(m_linkId))
+    {
+        // Step 6 exit path: we won Stage 2, and the RTS/CTS + data + ack exchange it forced has
+        // now concluded successfully. Leave Stage 2; if more AC_VO frames remain and QSRC/PSRC
+        // still allow it, the next NotifyAccessRequested() re-enters DS_CTS_PENDING on its own.
+        m_edca->ExitPedcaStage2(m_linkId);
+    }
+
     if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
         m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
     {
@@ -662,6 +724,15 @@ QosFrameExchangeManager::TransmissionFailed(bool forceCurrentCw)
     {
         FrameExchangeManager::TransmissionFailed(forceCurrentCw);
         return;
+    }
+
+    if (m_edca->IsPedcaStage2(m_linkId))
+    {
+        // Step 6 exit path: the RTS/CTS this Stage-2 win forced has failed (RTS not answered,
+        // most likely because another P-EDCA STA's RTS collided with ours in the same Stage-2
+        // window -- see the "Two DS-CTS ... count as a collision" note; the same applies to two
+        // RTS frames). Leave Stage 2 rather than keep it open for a retry under stale state.
+        m_edca->ExitPedcaStage2(m_linkId);
     }
 
     if (m_initialFrame)
@@ -834,7 +905,46 @@ QosFrameExchangeManager::UpdateNav(const WifiMacHeader& hdr,
         return;
     }
 
+    if (auto voTxop = m_mac->GetQosTxop(AC_VO);
+        hdr.IsCts() && voTxop && hdr.GetAddr1() == voTxop->GetPedcaDsCtsAddress())
+    {
+        if (m_mac->GetPEdcaSupported())
+        {
+            // A P-EDCA STA never defers on the magic RA, whether or not it is itself currently
+            // eligible: this is what keeps a non-eligible P-EDCA STA free to keep pursuing its
+            // own eligibility instead of freezing like a legacy STA would.
+            if (voTxop->PedcaEligible(m_linkId))
+            {
+                NS_LOG_DEBUG("Overheard DS-CTS: entering P-EDCA Stage 2 instead of setting NAV");
+                voTxop->EnterPedcaStage2(m_linkId, hdr.GetDuration());
+            }
+            else
+            {
+                NS_LOG_DEBUG("Overheard DS-CTS but not P-EDCA eligible: ignoring, no NAV set");
+            }
+            return;
+        }
+        // A legacy or P-EDCA-disabled QoS STA: fall through and set NAV from this CTS's
+        // Duration exactly like any other overheard CTS. This is the whole mechanism behind
+        // "DS-CTS transmission to all nodes and NAV of non-P-EDCA stations": no special-casing
+        // is needed here, the base class's own NAV update below does it.
+    }
+
     FrameExchangeManager::UpdateNav(hdr, txVector, surplus);
+}
+
+void
+QosFrameExchangeManager::NotifyPacketDiscarded(Ptr<const WifiMpdu> mpdu)
+{
+    FrameExchangeManager::NotifyPacketDiscarded(mpdu);
+
+    // Step 6 exit path: the AC_VO queue emptied (retry limit reached and dropped) while a
+    // Stage-2 window we opened was still running. Leave Stage 2 now instead of waiting for the
+    // window to time out, since there is nothing left to send.
+    if (m_edca && m_edca->IsPedcaStage2(m_linkId))
+    {
+        m_edca->ExitPedcaStage2(m_linkId);
+    }
 }
 
 void

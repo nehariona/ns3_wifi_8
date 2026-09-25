@@ -384,6 +384,54 @@ class QosTxop : public Txop
      * @return the currently used minimum contention window size.
      */
     uint32_t GetMinCw(uint8_t linkId) const override;
+    void NotifyAccessRequested(uint8_t linkId) override;
+    /**
+     * Check whether this AC may currently start P-EDCA (send a DS-CTS) on the given link:
+     * P-EDCA enabled at the MAC, AC_VO, frames queued, QSRC >= threshold, PSRC < limit.
+     * Does not modify state (HasFramesToTransmit() is non-const).
+     * @param linkId the ID of the given link
+     * @return true if P-EDCA eligible
+     */
+    bool PedcaEligible(uint8_t linkId);
+    /**
+     * @param linkId the ID of the given link
+     * @return true if this AC is currently contending, under DS-CTS access parameters, for the
+     *         right to transmit a DS-CTS on the given link
+     */
+    bool IsPedcaDsCtsPending(uint8_t linkId) const;
+    /**
+     * @param linkId the ID of the given link
+     * @return true if this AC is currently in the P-EDCA Stage-2 restricted-contention window
+     *         on the given link
+     */
+    bool IsPedcaStage2(uint8_t linkId) const;
+    /**
+     * @return the ANA-assigned RA used to identify a DS-CTS frame
+     */
+    Mac48Address GetPedcaDsCtsAddress() const;
+    /**
+     * @return the duration of the P-EDCA Stage-2 window
+     */
+    Time GetPedcaStage2Window() const;
+    /**
+     * Enter the P-EDCA Stage-2 window on the given link: switch this AC's own contention
+     * parameters to the Stage-2 values, disable every other AC on this link for the window
+     * duration (so only AC_VO can win access on this station), and schedule the window-expiry
+     * exit. Called by the sender right after actually transmitting a DS-CTS, and by a receiving
+     * P-EDCA STA's QosFrameExchangeManager::UpdateNav right after overhearing one.
+     * @param linkId the ID of the given link
+     * @param window the Stage-2 window duration (the DS-CTS frame's own Duration field, so a
+     *        receiver and the sender agree on when the window closes)
+     */
+    void EnterPedcaStage2(uint8_t linkId, Time window);
+    /**
+     * Leave the P-EDCA Stage-2 window on the given link and restore normal EDCA contention
+     * parameters. Idempotent: a no-op if this AC is not currently in Stage 2. Called on window
+     * timeout, when this AC wins contention inside Stage 2 and commits to sending RTS/CTS, and
+     * when the AC_VO queue empties or a P-EDCA frame is dropped while Stage 2 is open.
+     * @param linkId the ID of the given link
+     */
+    void ExitPedcaStage2(uint8_t linkId);
     /**
      * For the given link, return the maximum contention window size from the
      * EDCA Parameter Set or the MU EDCA Parameter Set, depending on whether the
@@ -421,6 +469,24 @@ class QosTxop : public Txop
         uint8_t muAifsn{0};            //!< the MU AIFSN
         Time muEdcaTimer{0};           //!< the MU EDCA Timer
         Time muEdcaTimerStartTime{0};  //!< last start time of the MU EDCA Timer
+
+        /**
+         * P-EDCA (IEEE 802.11bn) contention phase for this AC on this link. NORMAL is regular
+         * EDCA. DS_CTS_PENDING means QSRC/PSRC allow P-EDCA and this AC is contending, using the
+         * DS-CTS access parameters, for the right to transmit a DS-CTS. STAGE2 means a DS-CTS
+         * (this station's own, or one overheard from another P-EDCA STA) has opened a
+         * restricted-contention window in which only eligible P-EDCA STAs contend, using the
+         * Stage-2 access parameters, to send RTS/CTS + data.
+         */
+        enum class PedcaPhase
+        {
+            NORMAL,
+            DS_CTS_PENDING,
+            STAGE2
+        };
+
+        PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
+        EventId pedcaStage2Timeout;                //!< Stage-2 window expiry event
     };
 
     void DoDispose() override;
@@ -450,6 +516,15 @@ class QosTxop : public Txop
      */
     bool IsQosOldPacket(Ptr<const WifiMpdu> mpdu);
 
+    uint8_t m_pedcaQsrcThr{1};  //!< P-EDCA QSRC threshold
+    uint8_t m_pedcaPsrcThr{1};  //!< P-EDCA PSRC threshold
+    uint8_t m_pedcaDsAifsn{1};        //!< AIFSN used while contending to send a DS-CTS
+    uint32_t m_pedcaCwDs{0};          //!< CW_DS: max backoff (in slots) for the DS-CTS attempt
+    uint8_t m_pedcaStage2Aifsn{1};    //!< AIFSN used by eligible STAs during Stage 2
+    uint32_t m_pedcaStage2CwMin{0};   //!< minimum CW used by eligible STAs during Stage 2
+    uint32_t m_pedcaStage2CwMax{0};   //!< maximum CW used by eligible STAs during Stage 2
+    Time m_pedcaStage2Window{0};      //!< duration of the P-EDCA Stage-2 window
+    Mac48Address m_pedcaDsCtsAddress; //!< the RA used to identify a DS-CTS frame
     AcIndex m_ac;                     //!< the access category
     Ptr<BlockAckManager> m_baManager; //!< the block ack manager
     uint8_t m_blockAckThreshold; /**< the block ack threshold (use BA mechanism if number of packets

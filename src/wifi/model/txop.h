@@ -322,6 +322,25 @@ class Txop : public Object
      *         Retry Count (QSRC) maintained by QoS STAs for each AC on the given link
      */
     std::size_t GetStaRetryCount(uint8_t linkId) const;
+    /**
+     * Get the P-EDCA Short Retry Count (PSRC) for the given link, i.e., the number of
+     * DS-CTS frames sent since the last successful transmission or drop of a frame.
+     * @param linkId the ID of the given link
+     * @return the PSRC
+     */
+    std::size_t GetPsrc(uint8_t linkId) const;
+    /**
+     * Increment PSRC on the given link (call when a DS-CTS is actually transmitted).
+     * @param linkId the ID of the given link
+     */
+    void IncrementPsrc(uint8_t linkId);
+    /**
+     * Reset PSRC on the given link (call on successful Ack/BlockAck or MPDU drop).
+     * Deliberately separate from ResetCw(), which is also invoked by CW setters,
+     * DoInitialize() and ResetBackoff().
+     * @param linkId the ID of the given link
+     */
+    void ResetPsrc(uint8_t linkId);
 
     /**
      * Notify that the given link switched to sleep mode.
@@ -543,6 +562,7 @@ class Txop : public Object
         std::size_t staRetryCount{0}; //!< the Station Short Retry Count (SSRC) maintained by
                                       //!< non-QoS stations or the QoS STA Retry Count (QSRC)
                                       //!< maintained by QoS STAs for each AC
+        std::size_t psrc{0}; //!< the P-EDCA Short Retry Count (PSRC)
         ChannelAccessStatus access{NOT_REQUESTED}; //!< channel access status
 
         mutable class
@@ -579,6 +599,7 @@ class Txop : public Object
 
     BackoffValueTracedCallback m_backoffTrace; //!< backoff trace value
     CwValueTracedCallback m_cwTrace;           //!< CW trace value
+    CwValueTracedCallback m_psrcTrace;         //!< PSRC trace value
 
   private:
     /**
