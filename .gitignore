@@ -2,3 +2,28 @@ build/
 results/
 *.pcap
 *.tr
+
+# === ns-3 Build and Configuration Directories ===
+build/
+cmake-cache/
+.ns3_local_config
+.cmake/
+
+# === Python and Cache Artifacts ===
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# === Local Traces and Output Data ===
+# (Prevents massive PCAP or ASCII simulation log files from bloating your git repo)
+*.pcap
+*.tr
+*.pcapng
+*.txt
+*.csv
+
+# === IDE and System Files ===
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
