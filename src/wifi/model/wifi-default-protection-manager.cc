@@ -10,6 +10,8 @@
 
 #include "ap-wifi-mac.h"
 #include "sta-wifi-mac.h"
+#include "qos-txop.h"
+#include "qos-utils.h"
 #include "wifi-mpdu.h"
 #include "wifi-tx-parameters.h"
 
@@ -205,8 +207,20 @@ WifiDefaultProtectionManager::GetPsduProtection(const WifiMacHeader& hdr,
                         m_mac->GetLinkForPhy(emlsrManager->GetMainPhyId()) != m_linkId);
     }
 
+    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending data,
+    // regardless of what WifiRemoteStationManager::NeedRts() would otherwise decide (frame
+    // size, whether the destination is known to support it, etc.), since neighbouring legacy
+    // STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS exchange for this data
+    // frame specifically.
+    bool pedcaNeedRts = false;
+    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
+    {
+        auto voTxop = m_mac->GetQosTxop(AC_VO);
+        pedcaNeedRts = voTxop && voTxop->IsPedcaStage2(m_linkId);
+    }
+
     // check if RTS/CTS is needed
-    if (emlsrNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
+    if (emlsrNeedRts || pedcaNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
     {
         auto protection = std::make_unique<WifiRtsCtsProtection>();
         protection->rtsTxVector =

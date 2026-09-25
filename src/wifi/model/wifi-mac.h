@@ -620,6 +620,10 @@ class WifiMac : public Object
      */
     bool GetQosSupported() const;
     /**
+     * @return true if P-EDCA (IEEE 802.11bn) is enabled at this STA
+     */
+    bool GetPEdcaSupported() const;
+    /**
      * Return whether the device supports ERP on the given link.
      *
      * @param linkId the ID of the given link
@@ -1074,6 +1078,11 @@ class WifiMac : public Object
      * @param enable whether QoS is supported
      */
     void SetQosSupported(bool enable);
+    /**
+     * Enable or disable P-EDCA support (only before initialization).
+     * @param enable whether P-EDCA is supported
+     */
+    void SetPEdcaSupported(bool enable);
 
     /**
      * Set the Txop object.
@@ -1270,6 +1279,7 @@ class WifiMac : public Object
      * however.
      */
     bool m_qosSupported;
+    bool m_pedcaSupported{false}; ///< flag whether P-EDCA (802.11bn) is supported
 
     bool m_shortSlotTimeSupported; ///< flag whether short slot time is supported
     bool m_ctsToSelfSupported;     ///< flag indicating whether CTS-To-Self is supported

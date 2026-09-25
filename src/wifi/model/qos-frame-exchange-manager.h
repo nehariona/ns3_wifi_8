@@ -111,6 +111,7 @@ class QosFrameExchangeManager : public FrameExchangeManager
     void UpdateNav(const WifiMacHeader& hdr,
                    const WifiTxVector& txVector,
                    const Time& surplus = Time{0}) override;
+    void NotifyPacketDiscarded(Ptr<const WifiMpdu> mpdu) override;
     Time GetFrameDurationId(const WifiMacHeader& header,
                             uint32_t size,
                             const WifiTxParameters& txParams,
@@ -138,6 +139,16 @@ class QosFrameExchangeManager : public FrameExchangeManager
      * @return true if a frame exchange sequence was started, false otherwise
      */
     virtual bool StartTransmission(Ptr<QosTxop> edca, Time txopDuration);
+
+    /**
+     * Send a P-EDCA (IEEE 802.11bn) DS-CTS frame: a CTS-formatted control frame, addressed to
+     * the special DS-CTS RA, whose Duration announces the Stage-2 window. Modelled on
+     * FrameExchangeManager::SendCtsToSelf() and QosFrameExchangeManager::SendCfEndIfNeeded(),
+     * but with no associated MPDU, no response timer, and no ProtectionCompleted(): this is not
+     * a protection handshake, it is the AC_VO Txop's entire "transmission" for this TXOP.
+     * @param edca the AC_VO EDCAF that won access while P-EDCA eligible
+     */
+    void SendPedcaDsCts(Ptr<QosTxop> edca);
 
     /**
      * Start a frame exchange (including protection frames and acknowledgment frames

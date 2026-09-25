@@ -118,6 +118,10 @@ Txop::GetTypeId()
             .AddTraceSource("CwTrace",
                             "Trace source for contention window values",
                             MakeTraceSourceAccessor(&Txop::m_cwTrace),
+                            "ns3::Txop::CwValueTracedCallback")
+            .AddTraceSource("PsrcTrace",
+                            "Trace source for P-EDCA Short Retry Count (PSRC) values",
+                            MakeTraceSourceAccessor(&Txop::m_psrcTrace),
                             "ns3::Txop::CwValueTracedCallback");
     return tid;
 }
@@ -321,6 +325,33 @@ std::size_t
 Txop::GetStaRetryCount(uint8_t linkId) const
 {
     return GetLink(linkId).staRetryCount;
+}
+
+std::size_t
+Txop::GetPsrc(uint8_t linkId) const
+{
+    return GetLink(linkId).psrc;
+}
+
+void
+Txop::IncrementPsrc(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    auto& link = GetLink(linkId);
+    ++link.psrc;
+    m_psrcTrace(link.psrc, linkId);
+}
+
+void
+Txop::ResetPsrc(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    auto& link = GetLink(linkId);
+    if (link.psrc != 0)
+    {
+        link.psrc = 0;
+        m_psrcTrace(0, linkId);
+    }
 }
 
 void
