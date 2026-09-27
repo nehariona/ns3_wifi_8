@@ -1,4 +1,4 @@
-# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/stats
+# Install script for directory: /home/prthvsr/ns3_wifi_8/src/stats
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,6 +27,11 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
+# Install shared libraries without execute permission?
+if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
+  set(CMAKE_INSTALL_SO_NO_EXE "1")
+endif()
+
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -39,19 +44,25 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/stats/examples/cmake_install.cmake")
+  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/stats/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-stats-default.dylib")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.dylib" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.dylib")
-    execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
-      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
-      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so"
+         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-stats-default.so")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so"
+         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
+         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.dylib")
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-stats-default.so")
     endif()
   endif()
 endif()
@@ -60,43 +71,43 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/sqlite-output.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES "/home/prthvsr/ns3_wifi_8/src/stats/model/sqlite-output.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/sqlite-data-output.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/helper/file-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/helper/gnuplot-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/average.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/basic-data-calculators.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/boolean-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/data-calculator.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/data-collection-object.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/data-collector.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/data-output-interface.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/double-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/file-aggregator.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/get-wildcard-matches.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/gnuplot-aggregator.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/gnuplot.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/histogram.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/omnet-data-output.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/stats.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/time-data-calculators.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/time-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/time-series-adaptor.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/uinteger-16-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/uinteger-32-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/stats/model/uinteger-8-probe.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/stats-module.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/sqlite-data-output.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/helper/file-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/helper/gnuplot-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/average.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/basic-data-calculators.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/boolean-probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/data-calculator.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/data-collection-object.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/data-collector.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/data-output-interface.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/double-probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/file-aggregator.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/get-wildcard-matches.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/gnuplot-aggregator.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/gnuplot.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/histogram.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/omnet-data-output.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/stats.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/time-data-calculators.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/time-probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/time-series-adaptor.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/uinteger-16-probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/uinteger-32-probe.h"
+    "/home/prthvsr/ns3_wifi_8/src/stats/model/uinteger-8-probe.h"
+    "/home/prthvsr/ns3_wifi_8/build/include/ns3/stats-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/stats/install_local_manifest.txt"
+  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/stats/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

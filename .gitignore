@@ -8,6 +8,7 @@ build/
 cmake-cache/
 .ns3_local_config
 .cmake/
+CMakeLists.txt
 
 # === Python and Cache Artifacts ===
 __pycache__/

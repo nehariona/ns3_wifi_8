@@ -23,7 +23,7 @@ set -euo pipefail
 SCENARIOS_CSV="pedca_ratio_scenarios.csv"
 OUTPUT_CSV="results/pedca_ratio.csv"
 
-NUM_RUNS=10
+NUM_RUNS=1
 RNG_SEED=1
 
 PER_AC_LOAD_MBPS=2
@@ -41,7 +41,7 @@ PEDCA_QSRC_THR=1
 PEDCA_PSRC_THR=1
 PEDCA_DS_AIFSN=1
 PEDCA_CW_DS=7          # NOT 3: the draft reserves 3, see qos-txop.cc comment
-PEDCA_STAGE2_AIFSN=1
+PEDCA_STAGE2_AIFSN=2
 PEDCA_STAGE2_CWMIN=3
 PEDCA_STAGE2_CWMAX=7
 PEDCA_STAGE2_WINDOW_US=97

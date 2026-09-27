@@ -3,6 +3,7 @@
 #endif 
 #ifndef NS3_MODULE_CONFIG_STORE
     // Module headers: 
+    #include <ns3/gtk-config-store.h>
     #include <ns3/file-config.h>
     #include <ns3/config-store.h>
 #endif 

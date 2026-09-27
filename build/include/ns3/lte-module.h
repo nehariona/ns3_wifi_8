@@ -3,6 +3,7 @@
 #endif 
 #ifndef NS3_MODULE_LTE
     // Module headers: 
+    #include <ns3/emu-epc-helper.h>
     #include <ns3/cc-helper.h>
     #include <ns3/epc-helper.h>
     #include <ns3/lte-global-pathloss-database.h>
