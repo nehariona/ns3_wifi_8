@@ -1,4 +1,4 @@
-# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/spectrum
+# Install script for directory: /home/prthvsr/ns3_wifi_8/src/spectrum
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,6 +27,11 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
+# Install shared libraries without execute permission?
+if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
+  set(CMAKE_INSTALL_SO_NO_EXE "1")
+endif()
+
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -39,19 +44,25 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/spectrum/examples/cmake_install.cmake")
+  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/spectrum/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-spectrum-default.dylib")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.dylib" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.dylib")
-    execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
-      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
-      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so"
+         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-spectrum-default.so")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so"
+         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
+         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.dylib")
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-spectrum-default.so")
     endif()
   endif()
 endif()
@@ -61,53 +72,53 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/helper/adhoc-aloha-noack-ideal-phy-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/helper/spectrum-analyzer-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/helper/spectrum-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/helper/tv-spectrum-transmitter-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/helper/waveform-generator-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/aloha-noack-mac-header.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/aloha-noack-net-device.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/constant-spectrum-propagation-loss.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/friis-spectrum-propagation-loss.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/half-duplex-ideal-phy-signal-parameters.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/half-duplex-ideal-phy.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/hexagonal-wraparound-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/ism-spectrum-value-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/matrix-based-channel-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/microwave-oven-spectrum-value-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/multi-model-spectrum-channel.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/non-communicating-net-device.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/phased-array-spectrum-propagation-loss-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/single-model-spectrum-channel.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-analyzer.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-channel.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-converter.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-error-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-interference.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-model-300kHz-300GHz-log.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-model-ism2400MHz-res1MHz.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-phy.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-propagation-loss-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-signal-parameters.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-transmit-filter.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/spectrum-value.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/three-gpp-channel-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/three-gpp-spectrum-propagation-loss-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/trace-fading-loss-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/tv-spectrum-transmitter.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/two-ray-spectrum-propagation-loss-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/waveform-generator.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/model/wraparound-model.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/spectrum/utils/spectrum-test.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/spectrum-module.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/helper/adhoc-aloha-noack-ideal-phy-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/helper/spectrum-analyzer-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/helper/spectrum-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/helper/tv-spectrum-transmitter-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/helper/waveform-generator-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/aloha-noack-mac-header.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/aloha-noack-net-device.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/constant-spectrum-propagation-loss.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/friis-spectrum-propagation-loss.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/half-duplex-ideal-phy-signal-parameters.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/half-duplex-ideal-phy.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/hexagonal-wraparound-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/ism-spectrum-value-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/matrix-based-channel-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/microwave-oven-spectrum-value-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/multi-model-spectrum-channel.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/non-communicating-net-device.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/phased-array-spectrum-propagation-loss-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/single-model-spectrum-channel.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-analyzer.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-channel.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-converter.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-error-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-interference.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-model-300kHz-300GHz-log.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-model-ism2400MHz-res1MHz.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-phy.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-propagation-loss-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-signal-parameters.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-transmit-filter.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/spectrum-value.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/three-gpp-channel-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/three-gpp-spectrum-propagation-loss-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/trace-fading-loss-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/tv-spectrum-transmitter.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/two-ray-spectrum-propagation-loss-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/waveform-generator.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/model/wraparound-model.h"
+    "/home/prthvsr/ns3_wifi_8/src/spectrum/utils/spectrum-test.h"
+    "/home/prthvsr/ns3_wifi_8/build/include/ns3/spectrum-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/spectrum/install_local_manifest.txt"
+  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/spectrum/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -1,4 +1,4 @@
-# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/traffic-control
+# Install script for directory: /home/prthvsr/ns3_wifi_8/src/traffic-control
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,6 +27,11 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
+# Install shared libraries without execute permission?
+if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
+  set(CMAKE_INSTALL_SO_NO_EXE "1")
+endif()
+
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -39,19 +44,25 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/traffic-control/examples/cmake_install.cmake")
+  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/traffic-control/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-traffic-control-default.dylib")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.dylib" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.dylib")
-    execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
-      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
-      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so"
+         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-traffic-control-default.so")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so"
+         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
+         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.dylib")
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-traffic-control-default.so")
     endif()
   endif()
 endif()
@@ -61,30 +72,30 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/helper/queue-disc-container.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/helper/traffic-control-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/cobalt-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/codel-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/fifo-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/fq-cobalt-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/fq-codel-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/fq-pie-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/mq-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/packet-filter.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/pfifo-fast-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/pie-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/prio-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/red-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/tbf-queue-disc.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/traffic-control/model/traffic-control-layer.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/traffic-control-module.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/helper/queue-disc-container.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/helper/traffic-control-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/cobalt-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/codel-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/fifo-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/fq-cobalt-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/fq-codel-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/fq-pie-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/mq-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/packet-filter.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/pfifo-fast-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/pie-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/prio-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/red-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/tbf-queue-disc.h"
+    "/home/prthvsr/ns3_wifi_8/src/traffic-control/model/traffic-control-layer.h"
+    "/home/prthvsr/ns3_wifi_8/build/include/ns3/traffic-control-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/traffic-control/install_local_manifest.txt"
+  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/traffic-control/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

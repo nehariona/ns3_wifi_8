@@ -1,4 +1,4 @@
-# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/internet-apps
+# Install script for directory: /home/prthvsr/ns3_wifi_8/src/internet-apps
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,6 +27,11 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
+# Install shared libraries without execute permission?
+if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
+  set(CMAKE_INSTALL_SO_NO_EXE "1")
+endif()
+
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -39,19 +44,25 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/internet-apps/examples/cmake_install.cmake")
+  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/internet-apps/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-internet-apps-default.dylib")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.dylib" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.dylib")
-    execute_process(COMMAND /usr/bin/install_name_tool
-      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
-      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
-      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so"
+         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-internet-apps-default.so")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so"
+         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
+         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.dylib")
+      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-internet-apps-default.so")
     endif()
   endif()
 endif()
@@ -61,31 +72,31 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/helper/dhcp-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/helper/dhcp6-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/helper/ping-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/helper/radvd-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/helper/v4traceroute-helper.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp-client.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp-header.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp-server.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp6-client.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp6-duid.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp6-header.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp6-options.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/dhcp6-server.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/ping.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/radvd-interface.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/radvd-prefix.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/radvd.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/src/internet-apps/model/v4traceroute.h"
-    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/internet-apps-module.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/helper/dhcp-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/helper/dhcp6-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/helper/ping-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/helper/radvd-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/helper/v4traceroute-helper.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp-client.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp-header.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp-server.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp6-client.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp6-duid.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp6-header.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp6-options.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/dhcp6-server.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/ping.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/radvd-interface.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/radvd-prefix.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/radvd.h"
+    "/home/prthvsr/ns3_wifi_8/src/internet-apps/model/v4traceroute.h"
+    "/home/prthvsr/ns3_wifi_8/build/include/ns3/internet-apps-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/internet-apps/install_local_manifest.txt"
+  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/internet-apps/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
