@@ -211,7 +211,7 @@ index ca46668..0413b18 100644
       * Start a frame exchange (including protection frames and acknowledgment frames
       * as needed) that fits within the given <i>availableTime</i> (if different than
 diff --git a/src/wifi/model/qos-txop.cc b/src/wifi/model/qos-txop.cc
-index fb0e392..ad8dfb7 100644
+index fb0e392..0f069d7 100644
 --- a/src/wifi/model/qos-txop.cc
 +++ b/src/wifi/model/qos-txop.cc
 @@ -29,6 +29,7 @@
@@ -222,7 +222,7 @@ index fb0e392..ad8dfb7 100644
  #include "ns3/pointer.h"
  #include "ns3/random-variable-stream.h"
  #include "ns3/simulator.h"
-@@ -57,6 +58,58 @@ QosTxop::GetTypeId()
+@@ -57,6 +58,61 @@ QosTxop::GetTypeId()
                            BooleanValue(true),
                            MakeBooleanAccessor(&QosTxop::m_useExplicitBarAfterMissedBlockAck),
                            MakeBooleanChecker())
@@ -243,9 +243,12 @@ index fb0e392..ad8dfb7 100644
 +                          MakeUintegerChecker<uint8_t>(1, 15))
 +            .AddAttribute("PEdcaCwDs",
 +                          "P-EDCA: CW_DS, the max backoff window (in slots) for the DS-CTS "
-+                          "attempt. A value of 0 disables slot randomization (3 is reserved by "
-+                          "the draft and rejected here).",
-+                          UintegerValue(3),
++                          "attempt. A value of 0 disables slot randomization. The draft "
++                          "reserves the value 3, but ns-3's UintegerChecker cannot exclude a "
++                          "single value from an otherwise-valid range, so 3 is NOT rejected "
++                          "here -- callers must avoid it themselves (see the ratio-test "
++                          "scenario's own validation for an example).",
++                          UintegerValue(7),
 +                          MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
 +                          MakeUintegerChecker<uint32_t>(0, 1023))
 +            .AddAttribute("PEdcaStage2Aifsn",
@@ -281,7 +284,7 @@ index fb0e392..ad8dfb7 100644
              .AddAttribute("AddBaResponseTimeout",
                            "The timeout to wait for ADDBA response after the Ack to "
                            "ADDBA request is received.",
-@@ -252,33 +305,177 @@ QosTxop::EdcaDisabled(uint8_t linkId) const
+@@ -252,33 +308,177 @@ QosTxop::EdcaDisabled(uint8_t linkId) const
  uint32_t
  QosTxop::GetMinCw(uint8_t linkId) const
  {
