@@ -75,9 +75,12 @@ QosTxop::GetTypeId()
                           MakeUintegerChecker<uint8_t>(1, 15))
             .AddAttribute("PEdcaCwDs",
                           "P-EDCA: CW_DS, the max backoff window (in slots) for the DS-CTS "
-                          "attempt. A value of 0 disables slot randomization (3 is reserved by "
-                          "the draft and rejected here).",
-                          UintegerValue(3),
+                          "attempt. A value of 0 disables slot randomization. The draft "
+                          "reserves the value 3, but ns-3's UintegerChecker cannot exclude a "
+                          "single value from an otherwise-valid range, so 3 is NOT rejected "
+                          "here -- callers must avoid it themselves (see the ratio-test "
+                          "scenario's own validation for an example).",
+                          UintegerValue(7),
                           MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
                           MakeUintegerChecker<uint32_t>(0, 1023))
             .AddAttribute("PEdcaStage2Aifsn",
