@@ -890,26 +890,6 @@ main(int argc, char* argv[])
     }
 
     // ======================================================================
-    // Burst traffic model
-    // ======================================================================
-    //
-    // Each station alternates between an ON period of fixed duration and an
-    // OFF period drawn from Exponential(mean burstOffTimeMeanSeconds) -- a
-    // standard bursty-source renewal model. OnOffHelper's DataRate is the
-    // rate applied WHILE ON, not a time-average, so a station transmitting
-    // at rateBps only for a dutyCycle fraction of the run delivers a
-    // time-averaged offered load of rateBps * dutyCycle, not rateBps. The
-    // ON-period rate used below is scaled up by 1/dutyCycle so that the
-    // time-average still equals perStationLoadMbps[g] / perAcOfferedLoadMbps[g]
-    // (and the CSV columns of the same names), matching what those numbers
-    // meant in the original CBR sweep.
-
-    const double burstOnTimeSeconds = 1.0;
-    const double burstOffTimeMeanSeconds = 2.0;
-    const double dutyCycle =
-        burstOnTimeSeconds / (burstOnTimeSeconds + burstOffTimeMeanSeconds);
-
-    // ======================================================================
     // Print configuration
     // ======================================================================
 
@@ -936,12 +916,6 @@ main(int argc, char* argv[])
     std::cout << "  Stage-2 CWmin/max:  " << pedcaStage2CwMin << " / " << pedcaStage2CwMax
               << "\n";
     std::cout << "  Stage-2 window:     " << pedcaStage2WindowUs << " us\n";
-
-    std::cout << "\nTraffic model:        burst (ON=" << burstOnTimeSeconds
-              << "s constant, OFF=Exp(mean=" << burstOffTimeMeanSeconds
-              << "s)), duty cycle " << (dutyCycle * 100.0) << "%\n";
-    std::cout << "  ON-period rate is scaled by 1/dutyCycle so the time-averaged\n";
-    std::cout << "  offered load matches perStationLoadMbps/perAcOfferedLoadMbps below.\n";
 
     std::cout << "\nAC assignment (stations / per-station Mbps / total AC Mbps):\n";
 
@@ -979,22 +953,13 @@ main(int argc, char* argv[])
         const int group = GroupForStation(i, nBe, nBk, nVi, nVoLegacy, nVoPedca);
 
         const uint64_t rateBps = static_cast<uint64_t>(
-            std::llround(perStationLoadMbps[group] * 1'000'000.0 / dutyCycle));
+            std::llround(perStationLoadMbps[group] * 1'000'000.0));
 
         OnOffHelper client("ns3::UdpSocketFactory", dest);
 
         client.SetConstantRate(DataRate(rateBps), payloadSize);
 
         client.SetAttribute("Tos", UintegerValue(kAcGroups[group].tos));
-
-        client.SetAttribute(
-            "OnTime",
-            StringValue("ns3::ConstantRandomVariable[Constant=" +
-                         std::to_string(burstOnTimeSeconds) + "]"));
-        client.SetAttribute(
-            "OffTime",
-            StringValue("ns3::ExponentialRandomVariable[Mean=" +
-                         std::to_string(burstOffTimeMeanSeconds) + "]"));
 
         ApplicationContainer app = client.Install(staNodes.Get(i));
 
