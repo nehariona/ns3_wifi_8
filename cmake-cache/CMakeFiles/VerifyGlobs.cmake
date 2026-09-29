@@ -10,6 +10,7 @@ set(OLD_GLOB
   "/home/prthvsr/ns3_wifi_8/scratch/edca-ratio-validation.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/nested-subdir"
   "/home/prthvsr/ns3_wifi_8/scratch/pedca-ratio-validation.cc"
+  "/home/prthvsr/ns3_wifi_8/scratch/pedca-validation-poisson.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/scratch-simulator.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/subdir"
   "/home/prthvsr/ns3_wifi_8/scratch/two-nodes.cc"
@@ -41,6 +42,7 @@ set(OLD_GLOB
   "/home/prthvsr/ns3_wifi_8/scratch/edca-baseline-validation.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/edca-ratio-validation.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/pedca-ratio-validation.cc"
+  "/home/prthvsr/ns3_wifi_8/scratch/pedca-validation-poisson.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/scratch-simulator.cc"
   "/home/prthvsr/ns3_wifi_8/scratch/two-nodes.cc"
   )

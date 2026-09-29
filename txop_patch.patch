@@ -1,0 +1,223 @@
+Extend a Stage-2 win into a full TXOP for P-EDCA
+=================================================
+
+Applies ON TOP OF the already-applied pedca_patch.patch (i.e. against your
+current, already-patched ns-3.48 tree), not against vanilla ns-3.
+
+Problem being fixed
+--------------------
+Currently, ExitPedcaStage2() is called unconditionally, right at the top of
+QosFrameExchangeManager::TransmissionSucceeded(), as soon as the Stage-2
+winner's first RTS/CTS + data + ack exchange concludes -- see the "Step 6
+exit path" comment there. That means a Stage-2 win only ever buys the
+station ONE protected frame: even if AC_VO's TxopLimit and remaining TXOP
+time would allow more frames to go out back-to-back under the SAME channel
+hold (ordinary EDCA TXOP bursting, governed by the unmodified
+`if (m_edca->GetTxopLimit(...).IsStrictlyPositive() && ...)` block right
+below the P-EDCA insertion), the very next line already zeroed out the
+Stage-2 state before that check even runs.
+
+Fix
+---
+1. Only call ExitPedcaStage2() when the TXOP is actually ending (reusing
+   the exact TxopLimit/RemainingTxop condition the unmodified code already
+   uses to decide TXOP continuation) -- not unconditionally after the
+   first frame.
+2. Because GetPsduProtection() currently forces RTS/CTS for EVERY frame
+   sent while IsPedcaStage2() is true, simply keeping Stage 2 "open" for
+   the rest of the TXOP would force RTS/CTS before every continuation
+   frame too -- wasteful and non-standard (a TXOP's later frames are
+   already protected by the NAV the first frame's own Duration field set,
+   exactly like ordinary EDCA TXOP bursting for every other AC). So this
+   patch adds a one-shot "initial frame" flag, consumed the first time
+   GetPsduProtection() forces RTS for a given Stage-2 win, so only that
+   first frame is forced through RTS/CTS -- subsequent frames in the same
+   TXOP fall through to ordinary (usually no-RTS) protection decisions.
+
+Net effect: a Stage-2 win now reserves the medium (and keeps legacy/
+ineligible STAs deferred via the DS-CTS's NAV) for the station's whole
+TXOP, not just its first frame, while still only spending one RTS/CTS
+exchange to establish that reservation -- matching ordinary 802.11 TXOP
+semantics for the frames after the first.
+
+--- a/src/wifi/model/qos-txop.h
++++ b/src/wifi/model/qos-txop.h
+@@ -397,6 +397,16 @@ class QosTxop : public Txop
+      * @return true if this AC is currently in the P-EDCA Stage-2 restricted-contention window
+      *         on the given link
+      */
+     bool IsPedcaStage2(uint8_t linkId) const;
++    /**
++     * Query-and-consume the "initial frame of this Stage-2 win still pending RTS/CTS
++     * protection" flag for the given link. Returns true (and clears the flag) the first time
++     * this is called after EnterPedcaStage2() -- i.e. for the TXOP's first, RTS/CTS-protected
++     * frame -- and false on every subsequent call until the next EnterPedcaStage2(), i.e. for
++     * any further frames sent within the same Stage-2-won TXOP. Not const: this call has the
++     * side effect of consuming the flag, matching how PSRC/QSRC increments elsewhere in this
++     * class are one-shot per real transmission attempt.
++     * @param linkId the ID of the given link
++     * @return true if this is the Stage-2 win's initial (RTS/CTS-forced) frame
++     */
++    bool ConsumePedcaStage2InitialFrame(uint8_t linkId);
+     /**
+      * @return the ANA-assigned RA used to identify a DS-CTS frame
+      */
+@@ -469,6 +479,10 @@ class QosTxop : public Txop
+         };
+ 
+         PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
+         EventId pedcaStage2Timeout;                //!< Stage-2 window expiry event
++        bool pedcaStage2InitialFramePending{false}; //!< true until the Stage-2 win's first
++                                                     //!< (RTS/CTS-forced) frame has been sent;
++                                                     //!< see ConsumePedcaStage2InitialFrame()
+     };
+
+--- a/src/wifi/model/qos-txop.cc
++++ b/src/wifi/model/qos-txop.cc
+@@ -393,6 +393,7 @@ void
+ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
+ {
+     NS_LOG_FUNCTION(this << +linkId << window.As(Time::US));
+     auto& link = GetLink(linkId);
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
++    link.pedcaStage2InitialFramePending = true;
+     link.cw = GetMinCw(linkId); // now resolves to m_pedcaStage2CwMin
+     GenerateBackoff(linkId);
+     RequestAccess(linkId);
+@@ -424,6 +425,7 @@ QosTxop::ExitPedcaStage2(uint8_t linkId)
+     {
+         return; // already left through another exit path; nothing to do
+     }
+     NS_LOG_FUNCTION(this << +linkId);
++    link.pedcaStage2InitialFramePending = false;
+     if (link.pedcaStage2Timeout.IsPending())
+     {
+         link.pedcaStage2Timeout.Cancel();
+     }
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
+     link.cw = GetMinCw(linkId);
+     GenerateBackoff(linkId);
+     // Other ACs' backoff resumption times, pushed forward by DisableEdcaFor above, are not
+     // un-pushed here: there is no API to cancel that early, so on an early exit (e.g. we won
+     // Stage 2 well before the window would have timed out) other ACs stay paused a little
+     // longer than strictly necessary. If PedcaEligible(linkId) is still true, the very next
+     // NotifyAccessRequested() call re-enters DS_CTS_PENDING immediately.
+ }
++
++bool
++QosTxop::ConsumePedcaStage2InitialFrame(uint8_t linkId)
++{
++    auto& link = GetLink(linkId);
++    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2 ||
++        !link.pedcaStage2InitialFramePending)
++    {
++        return false;
++    }
++    link.pedcaStage2InitialFramePending = false;
++    return true;
++}
+
+--- a/src/wifi/model/qos-frame-exchange-manager.cc
++++ b/src/wifi/model/qos-frame-exchange-manager.cc
+@@ -682,14 +682,29 @@ QosFrameExchangeManager::TransmissionSucceeded()
+         return;
+     }
+
+-    if (m_edca->IsPedcaStage2(m_linkId))
+-    {
+-        // Step 6 exit path: we won Stage 2, and the RTS/CTS + data + ack exchange it forced has
+-        // now concluded successfully. Leave Stage 2; if more AC_VO frames remain and QSRC/PSRC
+-        // still allow it, the next NotifyAccessRequested() re-enters DS_CTS_PENDING on its own.
+-        m_edca->ExitPedcaStage2(m_linkId);
+-    }
++    if (m_edca->IsPedcaStage2(m_linkId))
++    {
++        if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
++            m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
++        {
++            // TXOP continues under the same channel hold Stage 2 already won: stay in Stage 2
++            // so the exit (and P-EDCA bookkeeping) happens once the whole TXOP ends, not after
++            // its first frame. GetPsduProtection() only forces RTS/CTS for the TXOP's initial
++            // frame (QosTxop::ConsumePedcaStage2InitialFrame), so this and later continuation
++            // frames fall through to ordinary protection decisions, exactly like TXOP
++            // continuation frames for any other AC -- they're already covered by the NAV the
++            // first frame's own Duration field set.
++            NS_LOG_DEBUG("Won Stage 2, TXOP continues: staying in Stage 2 until TXOP ends");
++        }
++        else
++        {
++            // Step 6 exit path: we won Stage 2, and either this was a single-frame TXOP or
++            // there is no more TXOP time/no more frames left. Leave Stage 2; if more AC_VO
++            // frames remain and QSRC/PSRC still allow it, the next NotifyAccessRequested()
++            // re-enters DS_CTS_PENDING on its own.
++            m_edca->ExitPedcaStage2(m_linkId);
++        }
++    }
+
+     if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
+         m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
+     {
+
+(TransmissionFailed() is intentionally left unchanged: a failed RTS/CTS
+means the reservation was never actually established for this attempt --
+most likely a Stage-2 collision with another P-EDCA STA's RTS -- so exiting
+Stage 2 immediately, rather than trying to continue a TXOP that was never
+secured, is still correct.)
+
+--- a/src/wifi/model/wifi-default-protection-manager.cc
++++ b/src/wifi/model/wifi-default-protection-manager.cc
+@@ -207,14 +207,17 @@ WifiDefaultProtectionManager::GetPsduProtection(const WifiMacHeader& hdr,
+                         m_mac->GetLinkForPhy(emlsrManager->GetMainPhyId()) != m_linkId);
+     }
+
+-    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending data,
+-    // regardless of what WifiRemoteStationManager::NeedRts() would otherwise decide (frame
+-    // size, whether the destination is known to support it, etc.), since neighbouring legacy
+-    // STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS exchange for this data
+-    // frame specifically.
+-    bool pedcaNeedRts = false;
+-    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
+-    {
+-        auto voTxop = m_mac->GetQosTxop(AC_VO);
+-        pedcaNeedRts = voTxop && voTxop->IsPedcaStage2(m_linkId);
+-    }
++    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending its
++    // FIRST data frame, regardless of what WifiRemoteStationManager::NeedRts() would otherwise
++    // decide (frame size, whether the destination is known to support it, etc.), since
++    // neighbouring legacy STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS
++    // exchange for this data frame specifically. Any further frames sent within the same
++    // Stage-2-won TXOP are already covered by the NAV that first frame's own Duration field
++    // set -- exactly like ordinary EDCA TXOP continuation frames for any other AC -- so
++    // ConsumePedcaStage2InitialFrame() only returns true once per Stage-2 win, not for every
++    // frame while IsPedcaStage2() happens to still be true.
++    bool pedcaNeedRts = false;
++    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
++    {
++        auto voTxop = m_mac->GetQosTxop(AC_VO);
++        pedcaNeedRts = voTxop && voTxop->ConsumePedcaStage2InitialFrame(m_linkId);
++    }
+
+     // check if RTS/CTS is needed
+     if (emlsrNeedRts || pedcaNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
+     {
+
+Notes / things to verify before you rely on this for results
+--------------------------------------------------------------
+1. Line numbers/context above are anchored to the hunks I was shown from
+   pedca_patch.patch, not a full compile of your tree -- match by the
+   quoted surrounding lines/comments rather than assuming exact line
+   numbers, and expect to nudge the hunks by hand if `patch`/`git apply`
+   complains about offset.
+2. This assumes QosTxop::GetTxopLimit()/GetRemainingTxop() are already
+   available and behave as used by the unmodified continuation check right
+   below the edit in TransmissionSucceeded() -- they are, since that block
+   is pre-existing, unmodified ns-3 code.
+3. Worth adding a companion CSV column / trace (e.g. counting frames sent
+   per Stage-2 win) if you want to directly verify in results that TXOPs
+   are now carrying more than one frame -- happy to add that if useful.
+4. Re-derive whether PEdcaStage2Window (97 us in your sweep) is still an
+   appropriate value once Stage-2 wins can now cover multi-frame TXOPs --
+   the window governs how long OTHER eligible STAs can still join Stage 2
+   to compete for the *next* win, not the winner's own TXOP duration, so
+   it likely does not need to change for this fix alone, but worth
+   confirming against your target draft's intent.
