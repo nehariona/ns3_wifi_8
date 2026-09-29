@@ -3,6 +3,7 @@
 /home/prthvsr/ns3_wifi_8/scratch/edca-baseline-validation.cc
 /home/prthvsr/ns3_wifi_8/scratch/edca-ratio-validation.cc
 /home/prthvsr/ns3_wifi_8/scratch/pedca-ratio-validation.cc
+/home/prthvsr/ns3_wifi_8/scratch/pedca-validation-poisson.cc
 /home/prthvsr/ns3_wifi_8/scratch/nested-subdir/scratch-nested-subdir-executable.cc
 /home/prthvsr/ns3_wifi_8/scratch/nested-subdir/lib/scratch-nested-subdir-library-source.cc
 /home/prthvsr/ns3_wifi_8/scratch/subdir/scratch-subdir-additional-header.cc
