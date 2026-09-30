@@ -60,12 +60,12 @@ QosTxop::GetTypeId()
                           MakeBooleanChecker())
             .AddAttribute("PEdcaQsrcThreshold",
                           "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (0 is reserved).",
-                          UintegerValue(2),
+                          UintegerValue(1),
                           MakeUintegerAccessor(&QosTxop::m_pedcaQsrcThr),
                           MakeUintegerChecker<uint8_t>(1))
             .AddAttribute("PEdcaPsrcThreshold",
                           "P-EDCA: PSRC limit; a DS-CTS may be sent only while PSRC is below it.",
-                          UintegerValue(5),
+                          UintegerValue(1),
                           MakeUintegerAccessor(&QosTxop::m_pedcaPsrcThr),
                           MakeUintegerChecker<uint8_t>(1, 4))
             .AddAttribute("PEdcaDsAifsn",
