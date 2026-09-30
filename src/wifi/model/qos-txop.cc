@@ -69,47 +69,48 @@ QosTxop::GetTypeId()
                           MakeUintegerAccessor(&QosTxop::m_pedcaPsrcThr),
                           MakeUintegerChecker<uint8_t>(1, 4))
             .AddAttribute("PEdcaDsAifsn",
-                          "P-EDCA: AIFSN used while contending to send a DS-CTS.",
-                          UintegerValue(1),
+                          "P-EDCA: AIFSN of DSAIFS[AC_VO] = aSIFSTime + (AIFSN + DSr) x "
+                          "aSlotTime, used while contending to send a DS-CTS (2 in the draft).",
+                          UintegerValue(2),
                           MakeUintegerAccessor(&QosTxop::m_pedcaDsAifsn),
                           MakeUintegerChecker<uint8_t>(1, 15))
             .AddAttribute("PEdcaCwDs",
-                          "P-EDCA: CW_DS, the max backoff window (in slots) for the DS-CTS "
-                          "attempt. A value of 0 disables slot randomization. The draft "
-                          "reserves the value 3, but ns-3's UintegerChecker cannot exclude a "
-                          "single value from an otherwise-valid range, so 3 is NOT rejected "
-                          "here -- callers must avoid it themselves (see the ratio-test "
-                          "scenario's own validation for an example).",
+                          "P-EDCA: CWds[AC_VO]; DSr is drawn uniformly in [0, CWds] for every "
+                          "DS-CTS attempt. 0 disables slot randomization. Verify the default "
+                          "and any reserved values against the target draft.",
                           UintegerValue(7),
                           MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
                           MakeUintegerChecker<uint32_t>(0, 1023))
             .AddAttribute("PEdcaStage2Aifsn",
-                          "P-EDCA: AIFSN used by eligible STAs while contending inside Stage 2.",
-                          UintegerValue(1),
+                          "P-EDCA: AIFSN used by eligible STAs while contending inside the "
+                          "P-EDCA contention (Stage 2) that follows a DS-CTS.",
+                          UintegerValue(2),
                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2Aifsn),
                           MakeUintegerChecker<uint8_t>(1, 15))
             .AddAttribute("PEdcaStage2CwMin",
-                          "P-EDCA: minimum CW used by eligible STAs inside Stage 2.",
+                          "P-EDCA: CWmin used by eligible STAs inside Stage 2. CW is set to "
+                          "min(CWmax, 2^QSRC x (CWmin + 1) - 1) when Stage 2 starts.",
                           UintegerValue(3),
                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMin),
                           MakeUintegerChecker<uint32_t>(0, 1023))
             .AddAttribute("PEdcaStage2CwMax",
-                          "P-EDCA: maximum CW used by eligible STAs inside Stage 2.",
+                          "P-EDCA: CWmax used by eligible STAs inside Stage 2.",
                           UintegerValue(7),
                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMax),
                           MakeUintegerChecker<uint32_t>(0, 1023))
             .AddAttribute("PEdcaStage2Window",
-                          "P-EDCA: duration of the Stage-2 restricted-contention window; also "
-                          "used as the DS-CTS frame's Duration field. Verify against the target "
-                          "draft; this is not auto-computed from AIFS/CWmax.",
-                          TimeValue(MicroSeconds(97)),
+                          "P-EDCA: the P-EDCA contention duration, carried in the Duration "
+                          "field of the DS-CTS. Zero (default) means aSIFSTime + "
+                          "(PEdcaStage2Aifsn + PEdcaStage2CwMax) x aSlotTime (97 us with 9 us "
+                          "slots and the default values), i.e. the window ends at the latest "
+                          "possible start of the RTS.",
+                          TimeValue(Time{0}),
                           MakeTimeAccessor(&QosTxop::m_pedcaStage2Window),
-                          MakeTimeChecker())
+                          MakeTimeChecker(Time{0}))
             .AddAttribute("PEdcaDsCtsAddress",
                           "P-EDCA: the RA used to identify a DS-CTS frame. Defaults to the "
-                          "ANA-assigned unicast address proposed in the 802.11bn draft; verify "
-                          "against the draft you are targeting, since a third-party ns-3 "
-                          "implementation instead treats this as broadcast.",
+                          "unicast address with OUI 00:0F:AC proposed in the 802.11bn PDT; "
+                          "verify against the draft you are targeting.",
                           Mac48AddressValue(Mac48Address("00:0F:AC:47:43:00")),
                           MakeMac48AddressAccessor(&QosTxop::m_pedcaDsCtsAddress),
                           MakeMac48AddressChecker())
@@ -215,6 +216,10 @@ QosTxop::DoDispose()
         m_baManager->Dispose();
     }
     m_baManager = nullptr;
+    for (const auto& [id, link] : GetLinks())
+    {
+        GetLink(id).pedcaStage2Timeout.Cancel();
+    }
     Txop::DoDispose();
 }
 
@@ -308,14 +313,15 @@ QosTxop::EdcaDisabled(uint8_t linkId) const
 uint32_t
 QosTxop::GetMinCw(uint8_t linkId) const
 {
-    auto& link = GetLink(linkId);
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2)
+    const auto& link = GetLink(linkId);
+    switch (link.pedcaPhase)
     {
+    case QosLinkEntity::PedcaPhase::STAGE2:
         return m_pedcaStage2CwMin;
-    }
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING)
-    {
-        return 0; // CW_DS window is always [0, m_pedcaCwDs]
+    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
+        return m_pedcaCwDs; // DSr is always drawn in [0, CWds]
+    default:
+        break;
     }
     if (!MuEdcaTimerRunning(linkId))
     {
@@ -328,14 +334,15 @@ QosTxop::GetMinCw(uint8_t linkId) const
 uint32_t
 QosTxop::GetMaxCw(uint8_t linkId) const
 {
-    auto& link = GetLink(linkId);
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2)
+    const auto& link = GetLink(linkId);
+    switch (link.pedcaPhase)
     {
+    case QosLinkEntity::PedcaPhase::STAGE2:
         return m_pedcaStage2CwMax;
-    }
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING)
-    {
+    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
         return m_pedcaCwDs;
+    default:
+        break;
     }
     if (!MuEdcaTimerRunning(linkId))
     {
@@ -345,11 +352,32 @@ QosTxop::GetMaxCw(uint8_t linkId) const
     return link.muCwMax;
 }
 
+uint8_t
+QosTxop::GetAifsn(uint8_t linkId) const
+{
+    const auto& link = GetLink(linkId);
+    switch (link.pedcaPhase)
+    {
+    case QosLinkEntity::PedcaPhase::STAGE2:
+        return m_pedcaStage2Aifsn;
+    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
+        return m_pedcaDsAifsn;
+    default:
+        break;
+    }
+    if (!MuEdcaTimerRunning(linkId))
+    {
+        return link.aifsn;
+    }
+    return link.muAifsn;
+}
+
 bool
 QosTxop::PedcaEligible(uint8_t linkId)
 {
-    return m_mac->GetPEdcaSupported() && m_ac == AC_VO && HasFramesToTransmit(linkId) &&
-           GetStaRetryCount(linkId) >= m_pedcaQsrcThr && GetPsrc(linkId) < m_pedcaPsrcThr;
+    return m_mac->GetPEdcaSupported() && m_ac == AC_VO && !EdcaDisabled(linkId) &&
+           HasFramesToTransmit(linkId) && GetStaRetryCount(linkId) >= m_pedcaQsrcThr &&
+           GetPsrc(linkId) < m_pedcaPsrcThr;
 }
 
 bool
@@ -371,41 +399,70 @@ QosTxop::GetPedcaDsCtsAddress() const
 }
 
 Time
-QosTxop::GetPedcaStage2Window() const
+QosTxop::GetPedcaStage2Window(uint8_t linkId) const
 {
-    return m_pedcaStage2Window;
+    if (m_pedcaStage2Window.IsStrictlyPositive())
+    {
+        return m_pedcaStage2Window;
+    }
+    auto phy = m_mac->GetWifiPhy(linkId);
+    NS_ASSERT(phy);
+    return phy->GetSifs() + (m_pedcaStage2Aifsn + m_pedcaStage2CwMax) * phy->GetSlot();
 }
 
 void
-QosTxop::NotifyAccessRequested(uint8_t linkId)
+QosTxop::SetPedcaCw(uint8_t linkId)
 {
-    // Lazily flip NORMAL <-> DS_CTS_PENDING each time a fresh access request begins (i.e. once
-    // per backoff instance, not mid-backoff). STAGE2 is entered/left only through
-    // EnterPedcaStage2()/ExitPedcaStage2(), never here.
+    // CW[AC] = min(CWmax[AC], 2^QSRC[AC] x (CWmin[AC] + 1) - 1), evaluated with the CWmin/CWmax
+    // of the current P-EDCA phase (10.23.2.2 and 37.x of the 802.11bn draft)
     auto& link = GetLink(linkId);
-    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2)
+    const auto qsrc = std::min<std::size_t>(link.staRetryCount, 31);
+    const uint64_t cw = (uint64_t{1} << qsrc) * (uint64_t{GetMinCw(linkId)} + 1) - 1;
+    link.cw = static_cast<uint32_t>(std::min<uint64_t>(GetMaxCw(linkId), cw));
+    m_cwTrace(link.cw, linkId);
+}
+
+void
+QosTxop::UpdateAccessParamsBeforeRequest(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    UpdatePedcaContention(linkId);
+}
+
+bool
+QosTxop::UpdatePedcaContention(uint8_t linkId)
+{
+    auto& link = GetLink(linkId);
+    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2)
     {
-        bool eligible = PedcaEligible(linkId);
-        bool pending = (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING);
-        if (eligible && !pending)
-        {
-            NS_LOG_DEBUG("QSRC/PSRC allow P-EDCA on link " << +linkId
-                                                            << ": contending for DS-CTS");
-            link.pedcaPhase = QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
-            link.cw = GetMinCw(linkId); // now resolves to the DS-CTS window (see GetMinCw below)
-            GenerateBackoff(linkId);
-        }
-        else if (!eligible && pending)
-        {
-            // PSRC hit its limit, the queue emptied, or the frame was dropped before this AC
-            // won access: fall back to normal EDCA.
-            NS_LOG_DEBUG("No longer P-EDCA eligible on link " << +linkId << ": back to EDCA");
-            link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
-            link.cw = GetMinCw(linkId);
-            GenerateBackoff(linkId);
-        }
+        // STAGE2 is entered/left only through EnterPedcaStage2()/ExitPedcaStage2()
+        return false;
     }
-    Txop::NotifyAccessRequested(linkId);
+    const bool eligible = PedcaEligible(linkId);
+    const bool pending = (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING);
+    if (eligible == pending)
+    {
+        return false;
+    }
+    if (eligible)
+    {
+        // DS-CTS contention: DSAIFS = aSIFSTime + (AIFSN + DSr) x aSlotTime, with DSr drawn
+        // in [0, CWds] for every DS-CTS transmission (no binary exponential backoff)
+        NS_LOG_DEBUG("QSRC/PSRC allow P-EDCA on link " << +linkId << ": contending for DS-CTS");
+        link.pedcaPhase = QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
+        link.cw = m_pedcaCwDs;
+        m_cwTrace(link.cw, linkId);
+    }
+    else
+    {
+        // PSRC hit its limit, the queue emptied or the frame was dropped/delivered before this
+        // AC sent a DS-CTS: fall back to normal EDCA
+        NS_LOG_DEBUG("No longer P-EDCA eligible on link " << +linkId << ": back to EDCA");
+        link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
+        SetPedcaCw(linkId);
+    }
+    GenerateBackoff(linkId);
+    return true;
 }
 
 void
@@ -413,30 +470,57 @@ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
 {
     NS_LOG_FUNCTION(this << +linkId << window.As(Time::US));
     auto& link = GetLink(linkId);
-    link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
-    link.cw = GetMinCw(linkId); // now resolves to m_pedcaStage2CwMin
-    GenerateBackoff(linkId);
-    RequestAccess(linkId);
+    auto cam = m_mac->GetChannelAccessManager(linkId);
 
-    // Restrict the *intra-station* contention pool to AC_VO for the window duration. Combined
-    // with every eligible P-EDCA STA overhearing the DS-CTS and doing the same
-    // (QosFrameExchangeManager::UpdateNav), this restricts the *inter-station* pool on the
-    // medium to eligible P-EDCA STAs' AC_VO queues, since legacy/ineligible STAs set NAV from
-    // the DS-CTS as usual and freeze their backoff.
+    link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
+    link.pedcaStage2End = Simulator::Now() + window;
+    SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
+
+    // Only the eligible AC_VO EDCAF of this station may contend during the P-EDCA contention:
+    // freeze the other EDCAFs for the window. They are resumed early by ExitPedcaStage2() if
+    // this AC delivers its frame(s) before the window ends.
     for (AcIndex ac : {AC_BE, AC_BK, AC_VI})
     {
         if (auto txop = m_mac->GetQosTxop(ac))
         {
-            m_mac->GetChannelAccessManager(linkId)->DisableEdcaFor(txop, window);
+            cam->DisableEdcaFor(txop, window);
         }
     }
 
-    if (link.pedcaStage2Timeout.IsPending())
+    // If access is GRANTED, this is the DS-CTS sender: the backoff is generated and access is
+    // requested again when the DS-CTS "TXOP" is released (QosTxop::NotifyChannelReleased)
+    if (link.access != GRANTED)
     {
-        link.pedcaStage2Timeout.Cancel();
+        GenerateBackoff(linkId);
+        if (link.access == REQUESTED)
+        {
+            cam->NotifyBackoffChangedNow();
+        }
+        else if (HasFramesToTransmit(linkId))
+        {
+            RequestAccess(linkId);
+        }
     }
+
+    link.pedcaStage2Timeout.Cancel();
     link.pedcaStage2Timeout =
-        Simulator::Schedule(window, &QosTxop::ExitPedcaStage2, this, linkId);
+        Simulator::Schedule(window, &QosTxop::PedcaStage2Timeout, this, linkId);
+}
+
+void
+QosTxop::PedcaStage2Timeout(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    if (GetLink(linkId).access == GRANTED)
+    {
+        // The window ends at the latest possible start of the RTS; if we have been granted
+        // access, our RTS (and possibly the rest of the TXOP) is under way and protected by the
+        // RTS/CTS Duration. Stage 2 is left when that exchange concludes
+        // (QosFrameExchangeManager::TransmissionSucceeded/Failed) or the channel is released.
+        NS_LOG_DEBUG("P-EDCA contention window ended during our own exchange");
+        return;
+    }
+    ExitPedcaStage2(linkId);
 }
 
 void
@@ -448,37 +532,42 @@ QosTxop::ExitPedcaStage2(uint8_t linkId)
         return; // already left through another exit path; nothing to do
     }
     NS_LOG_FUNCTION(this << +linkId);
-    if (link.pedcaStage2Timeout.IsPending())
-    {
-        link.pedcaStage2Timeout.Cancel();
-    }
+    link.pedcaStage2Timeout.Cancel();
     link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
-    link.cw = GetMinCw(linkId);
-    GenerateBackoff(linkId);
-    // Other ACs' backoff resumption times, pushed forward by DisableEdcaFor above, are not
-    // un-pushed here: there is no API to cancel that early, so on an early exit (e.g. we won
-    // Stage 2 well before the window would have timed out) other ACs stay paused a little
-    // longer than strictly necessary. If PedcaEligible(linkId) is still true, the very next
-    // NotifyAccessRequested() call re-enters DS_CTS_PENDING immediately.
-}
 
-uint8_t
-QosTxop::GetAifsn(uint8_t linkId) const
-{
-    auto& link = GetLink(linkId);
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2)
+    // Restore the dot11EDCATable parameters and set
+    // CW[AC_VO] = min(CWmax[AC_VO], 2^QSRC[AC_VO] x (CWmin[AC_VO] + 1) - 1). After a successful
+    // delivery QSRC has already been reset (ResetCw), hence CW = CWmin.
+    SetPedcaCw(linkId);
+
+    // resume the other EDCAFs, if they are still frozen by EnterPedcaStage2()
+    auto cam = m_mac->GetChannelAccessManager(linkId);
+    for (AcIndex ac : {AC_BE, AC_BK, AC_VI})
     {
-        return m_pedcaStage2Aifsn;
+        if (auto txop = m_mac->GetQosTxop(ac))
+        {
+            cam->ResumeEdcaIfDisabledUntil(txop, link.pedcaStage2End);
+        }
     }
-    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING)
+
+    if (link.access == GRANTED)
     {
-        return m_pedcaDsAifsn;
+        // we are the TXOP holder: a new backoff is generated when the TXOP ends
+        // (NotifyChannelReleased), which must not happen in the middle of the TXOP
+        return;
     }
-    if (!MuEdcaTimerRunning(linkId))
+
+    // We lost (or never got to) the P-EDCA contention. If still eligible, go back to DS-CTS
+    // contention (a STA that did not initiate a TXOP may send another DS-CTS), otherwise
+    // resume normal EDCA with a fresh backoff.
+    if (!UpdatePedcaContention(linkId))
     {
-        return link.aifsn;
+        GenerateBackoff(linkId);
     }
-    return link.muAifsn;
+    if (link.access == REQUESTED)
+    {
+        cam->NotifyBackoffChangedNow();
+    }
 }
 
 Ptr<BlockAckManager>
@@ -832,6 +921,16 @@ QosTxop::NotifyChannelReleased(uint8_t linkId)
 {
     NS_LOG_FUNCTION(this << +linkId);
     auto& link = GetLink(linkId);
+
+    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2 &&
+        !link.pedcaStage2Timeout.IsPending())
+    {
+        // the P-EDCA contention window expired while we held the channel and the exchange did
+        // not end through TransmissionSucceeded/Failed: leave Stage 2 before the backoff below
+        // is generated, so that it uses the normal EDCA parameters
+        link.access = NOT_REQUESTED;
+        ExitPedcaStage2(linkId);
+    }
 
     if (link.startTxop)
     {

@@ -949,9 +949,11 @@ PhyEntity::HandleRxPpduWithSameContent(Ptr<Event> event,
                                        Ptr<const WifiPpdu> ppdu,
                                        RxPowerWattPerChannelBand& rxPower)
 {
-    if (const auto maxDelay =
-            m_wifiPhy->GetPhyEntityForPpdu(ppdu)->GetMaxDelayPpduSameUid(ppdu->GetTxVector());
-        Simulator::Now() - event->GetStartTime() > maxDelay)
+    const auto maxDelay =
+        (ppdu->GetUid() & WifiPhy::SAME_CONTENT_PPDU_UID_FLAG)
+            ? m_wifiPhy->GetMaxDelaySameContentPpdu()
+            : m_wifiPhy->GetPhyEntityForPpdu(ppdu)->GetMaxDelayPpduSameUid(ppdu->GetTxVector());
+    if (Simulator::Now() - event->GetStartTime() > maxDelay)
     {
         // This PPDU arrived too late to be decoded properly. The PPDU is dropped and added as
         // interference
@@ -1377,6 +1379,10 @@ uint64_t
 PhyEntity::ObtainNextUid(const WifiTxVector& /* txVector */)
 {
     NS_LOG_FUNCTION(this);
+    if (const auto uid = m_wifiPhy->TakeNextTxPpduUid())
+    {
+        return *uid;
+    }
     return m_globalPpduUid++;
 }
 

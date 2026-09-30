@@ -1286,6 +1286,12 @@ uint64_t
 HePhy::ObtainNextUid(const WifiTxVector& txVector)
 {
     NS_LOG_FUNCTION(this << txVector);
+    if (const auto sameContentUid = m_wifiPhy->TakeNextTxPpduUid())
+    {
+        // PPDU with content identical to PPDUs sent simultaneously by other stations; it is not
+        // a PPDU soliciting a response, hence m_previouslyTxPpduUid is left unchanged
+        return *sameContentUid;
+    }
     uint64_t uid;
     if (txVector.IsUlMu() || txVector.IsTriggerResponding())
     {

@@ -28,6 +28,7 @@
 #include "ns3/wifi-export.h"
 
 #include <limits>
+#include <optional>
 
 #define WIFI_PHY_NS_LOG_APPEND_CONTEXT(phy)                                                        \
     {                                                                                              \
@@ -1275,6 +1276,45 @@ class WIFI_EXPORT WifiPhy : public Object
     void SetPreviouslyRxPpduUid(uint64_t uid);
 
     /**
+     * Flag set in the UID of PPDUs that are transmitted with identical content by several
+     * stations at the same time (e.g., the P-EDCA DS-CTS, which has no TA field and a fixed
+     * scrambler seed). A receiver combines such PPDUs as a single signal (their powers add up)
+     * instead of treating them as mutual interference, provided that they arrive within
+     * MaxDelaySameContentPpdu of each other.
+     */
+    static constexpr uint64_t SAME_CONTENT_PPDU_UID_FLAG = uint64_t{1} << 63;
+
+    /**
+     * Get a UID for a PPDU whose content is identical to that of PPDUs that other stations may
+     * transmit at the same time (see SAME_CONTENT_PPDU_UID_FLAG). All stations calling this
+     * method within the same 50 us interval obtain the same UID.
+     *
+     * @return the UID to use for the PPDU
+     */
+    static uint64_t GetSameContentPpduUid();
+
+    /**
+     * Use the given UID for the next PPDU transmitted by this PHY, instead of a newly
+     * generated one. The setting is consumed by the next transmission.
+     *
+     * @param uid the UID for the next transmitted PPDU
+     */
+    void SetNextTxPpduUid(uint64_t uid);
+
+    /**
+     * Return and clear the UID set by SetNextTxPpduUid(), if any.
+     *
+     * @return the UID to use for the PPDU being built, if one was set
+     */
+    std::optional<uint64_t> TakeNextTxPpduUid();
+
+    /**
+     * @return the maximum delay between the arrival of PPDUs with identical content (see
+     *         SAME_CONTENT_PPDU_UID_FLAG) for them to be combined
+     */
+    Time GetMaxDelaySameContentPpdu() const;
+
+    /**
      * @param currentChannelWidth channel width of the current transmission
      * @return the width of the guard band
      *
@@ -1407,6 +1447,8 @@ class WIFI_EXPORT WifiPhy : public Object
         m_currentPreambleEvents; //!< store event associated to a PPDU (that has a unique ID and
                                  //!< preamble combination) whose preamble is being received
 
+    std::optional<uint64_t> m_nextTxPpduUid; //!< UID to use for the next transmitted PPDU, if set
+    Time m_maxDelaySameContentPpdu; //!< max arrival delay to combine PPDUs with identical content
     uint64_t m_previouslyRxPpduUid; //!< UID of the previously received PPDU, reset to UINT64_MAX
                                     //!< upon transmission
 

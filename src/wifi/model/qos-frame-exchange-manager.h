@@ -111,7 +111,6 @@ class QosFrameExchangeManager : public FrameExchangeManager
     void UpdateNav(const WifiMacHeader& hdr,
                    const WifiTxVector& txVector,
                    const Time& surplus = Time{0}) override;
-    void NotifyPacketDiscarded(Ptr<const WifiMpdu> mpdu) override;
     Time GetFrameDurationId(const WifiMacHeader& header,
                             uint32_t size,
                             const WifiTxParameters& txParams,
@@ -128,6 +127,26 @@ class QosFrameExchangeManager : public FrameExchangeManager
     void ReceivedMacHdr(const WifiMacHeader& macHdr,
                         const WifiTxVector& txVector,
                         Time psduDuration) override;
+    bool NeedNavUpdate(const WifiMacHeader& hdr,
+                       const WifiTxVector& txVector,
+                       Time psduDuration) override;
+
+    /**
+     * Send a P-EDCA (IEEE 802.11bn) DS-CTS frame: a CTS addressed to the DS-CTS RA whose
+     * Duration is the P-EDCA contention duration, sent in a non-HT PPDU at 6 Mb/s. No response
+     * is expected. The sender enters the P-EDCA contention and releases the channel when the
+     * DS-CTS ends.
+     * @param edca the AC_VO EDCAF that won access while P-EDCA eligible
+     */
+    void SendPedcaDsCts(Ptr<QosTxop> edca);
+
+    /**
+     * An RTS addressed to this station has been received while its NAV is set: check whether
+     * the NAV was only set by a DS-CTS, in which case the RTS was sent in the P-EDCA contention
+     * protected by that DS-CTS and a CTS can be sent in response.
+     * @return true if a CTS can be sent in response to the RTS
+     */
+    bool CanRespondToRtsDuringPedca() const;
 
     /**
      * Request the FrameExchangeManager to start a frame exchange sequence.
@@ -139,16 +158,6 @@ class QosFrameExchangeManager : public FrameExchangeManager
      * @return true if a frame exchange sequence was started, false otherwise
      */
     virtual bool StartTransmission(Ptr<QosTxop> edca, Time txopDuration);
-
-    /**
-     * Send a P-EDCA (IEEE 802.11bn) DS-CTS frame: a CTS-formatted control frame, addressed to
-     * the special DS-CTS RA, whose Duration announces the Stage-2 window. Modelled on
-     * FrameExchangeManager::SendCtsToSelf() and QosFrameExchangeManager::SendCfEndIfNeeded(),
-     * but with no associated MPDU, no response timer, and no ProtectionCompleted(): this is not
-     * a protection handshake, it is the AC_VO Txop's entire "transmission" for this TXOP.
-     * @param edca the AC_VO EDCAF that won access while P-EDCA eligible
-     */
-    void SendPedcaDsCts(Ptr<QosTxop> edca);
 
     /**
      * Start a frame exchange (including protection frames and acknowledgment frames
@@ -224,10 +233,12 @@ class QosFrameExchangeManager : public FrameExchangeManager
      */
     void CancelPifsRecovery();
 
-    bool m_initialFrame;         //!< true if transmitting the initial frame of a TXOP
-    bool m_pifsRecovery;         //!< true if performing a PIFS recovery after failure
-    EventId m_pifsRecoveryEvent; //!< event associated with an attempt of PIFS recovery
-    Ptr<Txop> m_edcaBackingOff;  //!< channel access function that invoked backoff during TXOP
+    bool m_initialFrame;             //!< true if transmitting the initial frame of a TXOP
+    bool m_pifsRecovery;             //!< true if performing a PIFS recovery after failure
+    EventId m_pifsRecoveryEvent;     //!< event associated with an attempt of PIFS recovery
+    Ptr<Txop> m_edcaBackingOff;      //!< channel access function that invoked backoff during TXOP
+    EventId m_pedcaEnterStage2Event; //!< event to join a P-EDCA contention at the end of a DS-CTS
+    Time m_pedcaDsCtsNavEnd{0};      //!< NAV end set by the last DS-CTS, if not eligible
 };
 
 } // namespace ns3

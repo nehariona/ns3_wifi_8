@@ -9,9 +9,8 @@
 #include "wifi-default-protection-manager.h"
 
 #include "ap-wifi-mac.h"
-#include "sta-wifi-mac.h"
 #include "qos-txop.h"
-#include "qos-utils.h"
+#include "sta-wifi-mac.h"
 #include "wifi-mpdu.h"
 #include "wifi-tx-parameters.h"
 
@@ -207,17 +206,15 @@ WifiDefaultProtectionManager::GetPsduProtection(const WifiMacHeader& hdr,
                         m_mac->GetLinkForPhy(emlsrManager->GetMainPhyId()) != m_linkId);
     }
 
-    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending data,
-    // regardless of what WifiRemoteStationManager::NeedRts() would otherwise decide (frame
-    // size, whether the destination is known to support it, etc.), since neighbouring legacy
-    // STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS exchange for this data
-    // frame specifically.
-    bool pedcaNeedRts = false;
-    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
-    {
-        auto voTxop = m_mac->GetQosTxop(AC_VO);
-        pedcaNeedRts = voTxop && voTxop->IsPedcaStage2(m_linkId);
-    }
+    // P-EDCA: a P-EDCA STA that initiates a TXOP during a P-EDCA contention shall transmit an
+    // RTS frame as the initial frame in the TXOP. While in Stage 2, only the AC_VO EDCAF of this
+    // STA can win access (the other ACs are frozen), and it leaves Stage 2 as soon as the
+    // initial exchange concludes, so the following frames of the TXOP are protected as usual.
+    // This applies to any individually addressed frame of the AC_VO queue (QoS Data, but also,
+    // e.g., Management frames).
+    const auto voTxop = m_mac->GetQosTxop(AC_VO);
+    const bool pedcaNeedRts =
+        voTxop && voTxop->IsPedcaStage2(m_linkId) && !hdr.GetAddr1().IsGroup();
 
     // check if RTS/CTS is needed
     if (emlsrNeedRts || pedcaNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))

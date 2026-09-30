@@ -1011,8 +1011,10 @@
 /home/prthvsr/ns3_wifi_8/cmake-cache/examples/wireless/CMakeFiles/install/strip.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_edca-baseline-validation.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_edca-ratio-validation.dir
+/home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_pedca-ratio-validation-poisson-burst.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_pedca-ratio-validation.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_pedca-validation-poisson.dir
+/home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_pedca_txop.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_scratch-simulator.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_two-nodes.dir
 /home/prthvsr/ns3_wifi_8/cmake-cache/scratch/CMakeFiles/scratch_subdir_scratch-subdir.dir

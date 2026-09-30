@@ -1058,6 +1058,32 @@ ChannelAccessManager::DisableEdcaFor(Ptr<Txop> qosTxop, Time duration)
 }
 
 void
+ChannelAccessManager::ResumeEdcaIfDisabledUntil(Ptr<Txop> qosTxop, Time disabledUntil)
+{
+    NS_LOG_FUNCTION(this << qosTxop << disabledUntil);
+    NS_ASSERT(qosTxop->IsQosTxop());
+    const auto now = Simulator::Now();
+    if (const auto backoffStart = qosTxop->GetBackoffStart(m_linkId);
+        backoffStart > now && backoffStart <= disabledUntil)
+    {
+        UpdateBackoff();
+        NS_LOG_DEBUG("Backoff resumes now with " << qosTxop->GetBackoffSlots(m_linkId)
+                                                 << " remaining slot(s)");
+        qosTxop->UpdateBackoffSlotsNow(0, now, m_linkId);
+        DoRestartAccessTimeoutIfNeeded();
+    }
+}
+
+void
+ChannelAccessManager::NotifyBackoffChangedNow()
+{
+    NS_LOG_FUNCTION(this);
+    // the new backoff was started "now" (Txop::StartBackoffNow), hence there are no elapsed slots
+    // to account for; only the access timeout has to be recomputed
+    DoRestartAccessTimeoutIfNeeded();
+}
+
+void
 ChannelAccessManager::SetGenerateBackoffOnNoTx(bool enable)
 {
     NS_LOG_FUNCTION(this << enable);

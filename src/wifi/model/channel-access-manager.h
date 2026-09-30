@@ -227,6 +227,25 @@ class ChannelAccessManager : public Object
     void DisableEdcaFor(Ptr<Txop> qosTxop, Time duration);
 
     /**
+     * Undo an earlier DisableEdcaFor() before it would have expired on its own: if the backoff
+     * of the given EDCA is still frozen until a time in the future no later than
+     * <i>disabledUntil</i>, the backoff resumes now. A freeze that extends beyond
+     * <i>disabledUntil</i> (e.g., the one set by an MU EDCA timer) is left untouched.
+     *
+     * @param qosTxop a QosTxop previously disabled via DisableEdcaFor()
+     * @param disabledUntil the time until which that DisableEdcaFor() call froze the backoff
+     */
+    void ResumeEdcaIfDisabledUntil(Ptr<Txop> qosTxop, Time disabledUntil);
+
+    /**
+     * Notify that the backoff (or AIFSN/CW) of a Txop that has already requested channel access
+     * was changed outside of the normal backoff procedure (e.g., P-EDCA switching to or from
+     * the Stage-2 access parameters), so that the access timeout is recomputed. Must be called
+     * right after the new backoff was generated.
+     */
+    void NotifyBackoffChangedNow();
+
+    /**
      * Set the member variable indicating whether the backoff should be invoked when an AC gains
      * the right to start a TXOP but it does not transmit any frame (e.g., due to constraints
      * associated with EMLSR operations), provided that the queue is not actually empty.

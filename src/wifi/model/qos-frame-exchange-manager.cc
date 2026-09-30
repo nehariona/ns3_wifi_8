@@ -9,11 +9,14 @@
 #include "qos-frame-exchange-manager.h"
 
 #include "ap-wifi-mac.h"
+#include "qos-txop.h"
 #include "wifi-mac-queue.h"
 #include "wifi-mac-trailer.h"
 
 #include "ns3/abort.h"
+#include "ns3/erp-ofdm-phy.h"
 #include "ns3/log.h"
+#include "ns3/ofdm-phy.h"
 
 #undef NS_LOG_APPEND_CONTEXT
 #define NS_LOG_APPEND_CONTEXT WIFI_FEM_NS_LOG_APPEND_CONTEXT
@@ -80,6 +83,7 @@ QosFrameExchangeManager::DoDispose()
     m_edca = nullptr;
     m_edcaBackingOff = nullptr;
     m_pifsRecoveryEvent.Cancel();
+    m_pedcaEnterStage2Event.Cancel();
     FrameExchangeManager::DoDispose();
 }
 
@@ -177,26 +181,50 @@ QosFrameExchangeManager::SendPedcaDsCts(Ptr<QosTxop> edca)
     dsCts.SetNoMoreFragments();
     dsCts.SetNoRetry();
     dsCts.SetAddr1(edca->GetPedcaDsCtsAddress());
-    dsCts.SetDuration(edca->GetPedcaStage2Window());
+    const auto window = edca->GetPedcaStage2Window(m_linkId);
+    dsCts.SetDuration(window); // the P-EDCA contention duration
 
-    // Not a response to an RTS, so there is no RTS TxVector to derive a rate from; use the same
-    // fallback as SendCfEndIfNeeded() for a control frame addressed to no specific station.
-    // Your baseline's rate here may not match the draft's DS-CTS rate; verify against the draft.
+    // The DS-CTS is sent in a non-HT (duplicate) PPDU at 6 Mb/s. Take bandwidth and the other
+    // parameters from the RTS TXVECTOR and force the rate.
     WifiTxVector dsCtsTxVector =
         GetWifiRemoteStationManager()->GetRtsTxVector(dsCts.GetAddr1(), m_allowedWidth);
+    dsCtsTxVector.SetMode(m_phy->GetPhyBand() == WIFI_PHY_BAND_2_4GHZ
+                              ? ErpOfdmPhy::GetErpOfdmRate6Mbps()
+                              : OfdmPhy::GetOfdmRate6Mbps());
+    dsCtsTxVector.SetPreambleType(WIFI_PREAMBLE_LONG);
 
     auto mpdu = Create<WifiMpdu>(Create<Packet>(), dsCts);
-    auto txDuration =
+    const auto txDuration =
         WifiPhy::CalculateTxDuration(mpdu->GetSize(), dsCtsTxVector, m_phy->GetPhyBand());
 
+    // The DS-CTS does not initiate a TXOP (it is not sent after the 10.23.2.4 backoff), but the
+    // EDCAF has been granted access and releases the channel when the DS-CTS ends. Record the
+    // (empty) TXOP so that QosTxop::NotifyChannelReleased() generates a new backoff and requests
+    // access again for the P-EDCA contention.
+    m_dcf = edca;
+    m_edca = edca;
+    edca->NotifyChannelAccessed(m_linkId, Time{0});
+
+    // All DS-CTS frames are identical (no TA, same RA and Duration, fixed scrambler seed), hence
+    // DS-CTS frames sent in the same slot by several P-EDCA STAs add up at the receivers instead
+    // of colliding. Model this by giving them the same PPDU UID.
+    m_phy->SetNextTxPpduUid(WifiPhy::GetSameContentPpduUid());
     ForwardMpduDown(mpdu, dsCtsTxVector);
-
-    // Step 3: a DS-CTS is not a failed data attempt, so PSRC is incremented directly rather than
-    // through UpdateFailedCw(); step 5/6: open Stage 2 on this station and schedule its exit.
+    m_phy->TakeNextTxPpduUid(); // in case the PHY did not build a PPDU (e.g., PHY off)
     edca->IncrementPsrc(m_linkId);
-    edca->EnterPedcaStage2(m_linkId, edca->GetPedcaStage2Window());
 
-    Simulator::Schedule(txDuration, &QosFrameExchangeManager::NotifyChannelReleased, this, edca);
+    // The Duration of a CTS counts from the end of the frame, and that is also when receivers
+    // enter the P-EDCA contention (see NeedNavUpdate). Enter first, so that the backoff
+    // generated upon channel release already uses the Stage-2 parameters.
+    Simulator::Schedule(txDuration, &QosTxop::EnterPedcaStage2, edca, m_linkId, window);
+    Simulator::Schedule(txDuration, [this, edca]() {
+        ResetTxNav(); // the DS-CTS Duration does not belong to a TXOP of ours
+        NotifyChannelReleased(edca);
+        if (m_edca == edca)
+        {
+            m_edca = nullptr;
+        }
+    });
 }
 
 bool
@@ -223,8 +251,8 @@ QosFrameExchangeManager::StartTransmission(Ptr<Txop> edca, MHz_u allowedWidth)
 
     if (qosTxop->IsPedcaDsCtsPending(m_linkId))
     {
-        // We won contention under DS-CTS access parameters: send the DS-CTS itself rather than
-        // a data frame. This TXOP is entirely consumed by the DS-CTS transmission.
+        // We won contention under DS-CTS access parameters: send the DS-CTS instead of a data
+        // frame. The P-EDCA contention (and the TXOP started with an RTS) follows the DS-CTS.
         SendPedcaDsCts(qosTxop);
         return true;
     }
@@ -236,17 +264,6 @@ bool
 QosFrameExchangeManager::StartTransmission(Ptr<QosTxop> edca, Time txopDuration)
 {
     NS_LOG_FUNCTION(this << edca << txopDuration);
-
-    if (edca->IsPedcaStage2(m_linkId))
-    {
-        // This AC_VO instance won contention inside its own Stage-2 window: it must stay
-        // "in Stage 2" for WifiDefaultProtectionManager::GetPsduProtection() to force RTS/CTS
-        // below, so the actual exit is deferred to TransmissionSucceeded()/TransmissionFailed(),
-        // once that RTS/CTS + data exchange concludes and the RTS's own Duration field has
-        // taken over extending NAV. Per 802.11 the DS-CTS's own NAV/window cannot be revoked
-        // early, so this is the first point after committing that we can safely clean up.
-        NS_LOG_DEBUG("Won access inside Stage 2: sending RTS/CTS + data");
-    }
 
     if (m_pifsRecoveryEvent.IsPending())
     {
@@ -682,13 +699,10 @@ QosFrameExchangeManager::TransmissionSucceeded()
         return;
     }
 
-    if (m_edca->IsPedcaStage2(m_linkId))
-    {
-        // Step 6 exit path: we won Stage 2, and the RTS/CTS + data + ack exchange it forced has
-        // now concluded successfully. Leave Stage 2; if more AC_VO frames remain and QSRC/PSRC
-        // still allow it, the next NotifyAccessRequested() re-enters DS_CTS_PENDING on its own.
-        m_edca->ExitPedcaStage2(m_linkId);
-    }
+    // P-EDCA: the frame exchange initiated with an RTS in the P-EDCA contention succeeded (one or
+    // more MPDUs delivered). Restore the EDCA parameters and resume the other ACs; the TXOP
+    // itself continues below as a regular EDCA TXOP (only its initial frame had to be an RTS).
+    m_edca->ExitPedcaStage2(m_linkId);
 
     if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
         m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
@@ -726,14 +740,11 @@ QosFrameExchangeManager::TransmissionFailed(bool forceCurrentCw)
         return;
     }
 
-    if (m_edca->IsPedcaStage2(m_linkId))
-    {
-        // Step 6 exit path: the RTS/CTS this Stage-2 win forced has failed (RTS not answered,
-        // most likely because another P-EDCA STA's RTS collided with ours in the same Stage-2
-        // window -- see the "Two DS-CTS ... count as a collision" note; the same applies to two
-        // RTS frames). Leave Stage 2 rather than keep it open for a retry under stale state.
-        m_edca->ExitPedcaStage2(m_linkId);
-    }
+    // P-EDCA: the RTS sent in the P-EDCA contention got no CTS (most likely it collided with the
+    // RTS of another P-EDCA STA) or the frame exchange failed. Leave the P-EDCA contention
+    // first, so that UpdateFailedCw() below applies the EDCA CWmin/CWmax. If PSRC still allows
+    // it, the next access request goes back to DS-CTS contention.
+    m_edca->ExitPedcaStage2(m_linkId);
 
     if (m_initialFrame)
     {
@@ -905,46 +916,64 @@ QosFrameExchangeManager::UpdateNav(const WifiMacHeader& hdr,
         return;
     }
 
-    if (auto voTxop = m_mac->GetQosTxop(AC_VO);
-        hdr.IsCts() && voTxop && hdr.GetAddr1() == voTxop->GetPedcaDsCtsAddress())
-    {
-        if (m_mac->GetPEdcaSupported())
-        {
-            // A P-EDCA STA never defers on the magic RA, whether or not it is itself currently
-            // eligible: this is what keeps a non-eligible P-EDCA STA free to keep pursuing its
-            // own eligibility instead of freezing like a legacy STA would.
-            if (voTxop->PedcaEligible(m_linkId))
-            {
-                NS_LOG_DEBUG("Overheard DS-CTS: entering P-EDCA Stage 2 instead of setting NAV");
-                voTxop->EnterPedcaStage2(m_linkId, hdr.GetDuration());
-            }
-            else
-            {
-                NS_LOG_DEBUG("Overheard DS-CTS but not P-EDCA eligible: ignoring, no NAV set");
-            }
-            return;
-        }
-        // A legacy or P-EDCA-disabled QoS STA: fall through and set NAV from this CTS's
-        // Duration exactly like any other overheard CTS. This is the whole mechanism behind
-        // "DS-CTS transmission to all nodes and NAV of non-P-EDCA stations": no special-casing
-        // is needed here, the base class's own NAV update below does it.
-    }
-
     FrameExchangeManager::UpdateNav(hdr, txVector, surplus);
 }
 
-void
-QosFrameExchangeManager::NotifyPacketDiscarded(Ptr<const WifiMpdu> mpdu)
+bool
+QosFrameExchangeManager::NeedNavUpdate(const WifiMacHeader& hdr,
+                                       const WifiTxVector& txVector,
+                                       Time psduDuration)
 {
-    FrameExchangeManager::NotifyPacketDiscarded(mpdu);
+    NS_LOG_FUNCTION(this << hdr << txVector << psduDuration.As(Time::US));
 
-    // Step 6 exit path: the AC_VO queue emptied (retry limit reached and dropped) while a
-    // Stage-2 window we opened was still running. Leave Stage 2 now instead of waiting for the
-    // window to time out, since there is nothing left to send.
-    if (m_edca && m_edca->IsPedcaStage2(m_linkId))
+    auto voTxop = m_mac->GetQosTxop(AC_VO);
+    if (!hdr.IsCts() || !voTxop || hdr.GetAddr1() != voTxop->GetPedcaDsCtsAddress())
     {
-        m_edca->ExitPedcaStage2(m_linkId);
+        return FrameExchangeManager::NeedNavUpdate(hdr, txVector, psduDuration);
     }
+
+    // P-EDCA DS-CTS
+    if (m_mac->GetPEdcaSupported() && voTxop->PedcaEligible(m_linkId))
+    {
+        // An eligible P-EDCA STA (AP or non-AP) takes part in the P-EDCA contention instead of
+        // deferring. The contention starts at the end of the DS-CTS, which is also where the
+        // Duration of a CTS is counted from.
+        NS_LOG_DEBUG("Overheard DS-CTS: joining the P-EDCA contention instead of setting NAV");
+        m_pedcaEnterStage2Event.Cancel();
+        m_pedcaEnterStage2Event = Simulator::Schedule(psduDuration,
+                                                      &QosTxop::EnterPedcaStage2,
+                                                      voTxop,
+                                                      m_linkId,
+                                                      hdr.GetDuration());
+        return false;
+    }
+
+    // Legacy STAs and P-EDCA STAs that are not eligible defer like for any other CTS. Remember
+    // the NAV set by the DS-CTS, so that an RTS sent in the P-EDCA contention can be answered.
+    NS_LOG_DEBUG("Overheard DS-CTS: not P-EDCA eligible, setting NAV");
+    m_pedcaDsCtsNavEnd = Simulator::Now() + psduDuration + hdr.GetDuration();
+    return true;
+}
+
+bool
+QosFrameExchangeManager::CanRespondToRtsDuringPedca() const
+{
+    NS_LOG_FUNCTION(this);
+    const auto now = Simulator::Now();
+    if (!m_mac->GetPEdcaSupported() || m_pedcaDsCtsNavEnd <= now || m_navEnd > m_pedcaDsCtsNavEnd)
+    {
+        // the NAV was not set by a DS-CTS, or it was extended by some other frame
+        return false;
+    }
+    // The NAV (basic NAV for HE STAs) has only been set by a DS-CTS: the RTS was sent in the
+    // P-EDCA contention that the DS-CTS protects, hence respond if no other NAV (e.g., the
+    // intra-BSS NAV of HE STAs) indicates busy medium.
+    auto self = const_cast<QosFrameExchangeManager*>(this);
+    const auto navEnd = m_navEnd;
+    self->m_navEnd = now;
+    const auto idle = VirtualCsMediumIdle();
+    self->m_navEnd = navEnd;
+    return idle;
 }
 
 void
@@ -978,7 +1007,7 @@ QosFrameExchangeManager::ReceiveMpdu(Ptr<const WifiMpdu> mpdu,
         // frame matches the saved TXOP holder address, then the STA shall send the
         // CTS frame after SIFS, without regard for, and without resetting, its NAV.
         // (sec. 10.22.2.4 of 802.11-2016)
-        if (hdr.GetAddr2() == m_txopHolder || VirtualCsMediumIdle())
+        if (hdr.GetAddr2() == m_txopHolder || VirtualCsMediumIdle() || CanRespondToRtsDuringPedca())
         {
             NS_LOG_DEBUG("Received RTS from=" << hdr.GetAddr2() << ", schedule CTS");
             m_sendCtsEvent = Simulator::Schedule(m_phy->GetSifs(),

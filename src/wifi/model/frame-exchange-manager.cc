@@ -333,7 +333,18 @@ FrameExchangeManager::ReceivedMacHdr(const WifiMacHeader& macHdr,
 {
     NS_LOG_FUNCTION(this << macHdr << txVector << psduDuration.As(Time::MS));
     m_ongoingRxInfo = {macHdr, txVector, Simulator::Now() + psduDuration};
-    UpdateNav(macHdr, txVector, psduDuration);
+    if (NeedNavUpdate(macHdr, txVector, psduDuration))
+    {
+        UpdateNav(macHdr, txVector, psduDuration);
+    }
+}
+
+bool
+FrameExchangeManager::NeedNavUpdate(const WifiMacHeader& /* hdr */,
+                                    const WifiTxVector& /* txVector */,
+                                    Time /* psduDuration */)
+{
+    return true;
 }
 
 std::optional<std::reference_wrapper<const FrameExchangeManager::OngoingRxInfo>>
@@ -1448,7 +1459,10 @@ FrameExchangeManager::PostProcessFrame(Ptr<const WifiPsdu> psdu, const WifiTxVec
 {
     NS_LOG_FUNCTION(this << psdu << txVector);
 
-    UpdateNav(psdu->GetHeader(0), txVector);
+    if (NeedNavUpdate(psdu->GetHeader(0), txVector, Time{0}))
+    {
+        UpdateNav(psdu->GetHeader(0), txVector);
+    }
 }
 
 void
@@ -1726,7 +1740,6 @@ FrameExchangeManager::ReceivedNormalAck(Ptr<WifiMpdu> mpdu,
     if (m_dcf)
     {
         m_dcf->ResetCw(m_linkId);
-        m_dcf->ResetPsrc(m_linkId);
     }
     else
     {

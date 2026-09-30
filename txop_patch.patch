@@ -1,223 +1,1324 @@
-Extend a Stage-2 win into a full TXOP for P-EDCA
-=================================================
-
-Applies ON TOP OF the already-applied pedca_patch.patch (i.e. against your
-current, already-patched ns-3.48 tree), not against vanilla ns-3.
-
-Problem being fixed
---------------------
-Currently, ExitPedcaStage2() is called unconditionally, right at the top of
-QosFrameExchangeManager::TransmissionSucceeded(), as soon as the Stage-2
-winner's first RTS/CTS + data + ack exchange concludes -- see the "Step 6
-exit path" comment there. That means a Stage-2 win only ever buys the
-station ONE protected frame: even if AC_VO's TxopLimit and remaining TXOP
-time would allow more frames to go out back-to-back under the SAME channel
-hold (ordinary EDCA TXOP bursting, governed by the unmodified
-`if (m_edca->GetTxopLimit(...).IsStrictlyPositive() && ...)` block right
-below the P-EDCA insertion), the very next line already zeroed out the
-Stage-2 state before that check even runs.
-
-Fix
----
-1. Only call ExitPedcaStage2() when the TXOP is actually ending (reusing
-   the exact TxopLimit/RemainingTxop condition the unmodified code already
-   uses to decide TXOP continuation) -- not unconditionally after the
-   first frame.
-2. Because GetPsduProtection() currently forces RTS/CTS for EVERY frame
-   sent while IsPedcaStage2() is true, simply keeping Stage 2 "open" for
-   the rest of the TXOP would force RTS/CTS before every continuation
-   frame too -- wasteful and non-standard (a TXOP's later frames are
-   already protected by the NAV the first frame's own Duration field set,
-   exactly like ordinary EDCA TXOP bursting for every other AC). So this
-   patch adds a one-shot "initial frame" flag, consumed the first time
-   GetPsduProtection() forces RTS for a given Stage-2 win, so only that
-   first frame is forced through RTS/CTS -- subsequent frames in the same
-   TXOP fall through to ordinary (usually no-RTS) protection decisions.
-
-Net effect: a Stage-2 win now reserves the medium (and keeps legacy/
-ineligible STAs deferred via the DS-CTS's NAV) for the station's whole
-TXOP, not just its first frame, while still only spending one RTS/CTS
-exchange to establish that reservation -- matching ordinary 802.11 TXOP
-semantics for the frames after the first.
-
---- a/src/wifi/model/qos-txop.h
-+++ b/src/wifi/model/qos-txop.h
-@@ -397,6 +397,16 @@ class QosTxop : public Txop
-      * @return true if this AC is currently in the P-EDCA Stage-2 restricted-contention window
-      *         on the given link
-      */
-     bool IsPedcaStage2(uint8_t linkId) const;
-+    /**
-+     * Query-and-consume the "initial frame of this Stage-2 win still pending RTS/CTS
-+     * protection" flag for the given link. Returns true (and clears the flag) the first time
-+     * this is called after EnterPedcaStage2() -- i.e. for the TXOP's first, RTS/CTS-protected
-+     * frame -- and false on every subsequent call until the next EnterPedcaStage2(), i.e. for
-+     * any further frames sent within the same Stage-2-won TXOP. Not const: this call has the
-+     * side effect of consuming the flag, matching how PSRC/QSRC increments elsewhere in this
-+     * class are one-shot per real transmission attempt.
-+     * @param linkId the ID of the given link
-+     * @return true if this is the Stage-2 win's initial (RTS/CTS-forced) frame
-+     */
-+    bool ConsumePedcaStage2InitialFrame(uint8_t linkId);
-     /**
-      * @return the ANA-assigned RA used to identify a DS-CTS frame
-      */
-@@ -469,6 +479,10 @@ class QosTxop : public Txop
-         };
- 
-         PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
-         EventId pedcaStage2Timeout;                //!< Stage-2 window expiry event
-+        bool pedcaStage2InitialFramePending{false}; //!< true until the Stage-2 win's first
-+                                                     //!< (RTS/CTS-forced) frame has been sent;
-+                                                     //!< see ConsumePedcaStage2InitialFrame()
-     };
-
---- a/src/wifi/model/qos-txop.cc
-+++ b/src/wifi/model/qos-txop.cc
-@@ -393,6 +393,7 @@ void
- QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
- {
-     NS_LOG_FUNCTION(this << +linkId << window.As(Time::US));
-     auto& link = GetLink(linkId);
-     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
-+    link.pedcaStage2InitialFramePending = true;
-     link.cw = GetMinCw(linkId); // now resolves to m_pedcaStage2CwMin
-     GenerateBackoff(linkId);
-     RequestAccess(linkId);
-@@ -424,6 +425,7 @@ QosTxop::ExitPedcaStage2(uint8_t linkId)
-     {
-         return; // already left through another exit path; nothing to do
-     }
-     NS_LOG_FUNCTION(this << +linkId);
-+    link.pedcaStage2InitialFramePending = false;
-     if (link.pedcaStage2Timeout.IsPending())
-     {
-         link.pedcaStage2Timeout.Cancel();
-     }
-     link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
-     link.cw = GetMinCw(linkId);
-     GenerateBackoff(linkId);
-     // Other ACs' backoff resumption times, pushed forward by DisableEdcaFor above, are not
-     // un-pushed here: there is no API to cancel that early, so on an early exit (e.g. we won
-     // Stage 2 well before the window would have timed out) other ACs stay paused a little
-     // longer than strictly necessary. If PedcaEligible(linkId) is still true, the very next
-     // NotifyAccessRequested() call re-enters DS_CTS_PENDING immediately.
+diff --git a/src/wifi/model/channel-access-manager.cc b/src/wifi/model/channel-access-manager.cc
+index a1440fb00..20cd5ae73 100644
+--- a/src/wifi/model/channel-access-manager.cc
++++ b/src/wifi/model/channel-access-manager.cc
+@@ -1057,6 +1057,32 @@ ChannelAccessManager::DisableEdcaFor(Ptr<Txop> qosTxop, Time duration)
+     DoRestartAccessTimeoutIfNeeded();
  }
+ 
++void
++ChannelAccessManager::ResumeEdcaIfDisabledUntil(Ptr<Txop> qosTxop, Time disabledUntil)
++{
++    NS_LOG_FUNCTION(this << qosTxop << disabledUntil);
++    NS_ASSERT(qosTxop->IsQosTxop());
++    const auto now = Simulator::Now();
++    if (const auto backoffStart = qosTxop->GetBackoffStart(m_linkId);
++        backoffStart > now && backoffStart <= disabledUntil)
++    {
++        UpdateBackoff();
++        NS_LOG_DEBUG("Backoff resumes now with " << qosTxop->GetBackoffSlots(m_linkId)
++                                                 << " remaining slot(s)");
++        qosTxop->UpdateBackoffSlotsNow(0, now, m_linkId);
++        DoRestartAccessTimeoutIfNeeded();
++    }
++}
++
++void
++ChannelAccessManager::NotifyBackoffChangedNow()
++{
++    NS_LOG_FUNCTION(this);
++    // the new backoff was started "now" (Txop::StartBackoffNow), hence there are no elapsed slots
++    // to account for; only the access timeout has to be recomputed
++    DoRestartAccessTimeoutIfNeeded();
++}
++
+ void
+ ChannelAccessManager::SetGenerateBackoffOnNoTx(bool enable)
+ {
+diff --git a/src/wifi/model/channel-access-manager.h b/src/wifi/model/channel-access-manager.h
+index f51d81827..3590b8772 100644
+--- a/src/wifi/model/channel-access-manager.h
++++ b/src/wifi/model/channel-access-manager.h
+@@ -226,6 +226,25 @@ class ChannelAccessManager : public Object
+      */
+     void DisableEdcaFor(Ptr<Txop> qosTxop, Time duration);
+ 
++    /**
++     * Undo an earlier DisableEdcaFor() before it would have expired on its own: if the backoff
++     * of the given EDCA is still frozen until a time in the future no later than
++     * <i>disabledUntil</i>, the backoff resumes now. A freeze that extends beyond
++     * <i>disabledUntil</i> (e.g., the one set by an MU EDCA timer) is left untouched.
++     *
++     * @param qosTxop a QosTxop previously disabled via DisableEdcaFor()
++     * @param disabledUntil the time until which that DisableEdcaFor() call froze the backoff
++     */
++    void ResumeEdcaIfDisabledUntil(Ptr<Txop> qosTxop, Time disabledUntil);
++
++    /**
++     * Notify that the backoff (or AIFSN/CW) of a Txop that has already requested channel access
++     * was changed outside of the normal backoff procedure (e.g., P-EDCA switching to or from
++     * the Stage-2 access parameters), so that the access timeout is recomputed. Must be called
++     * right after the new backoff was generated.
++     */
++    void NotifyBackoffChangedNow();
++
+     /**
+      * Set the member variable indicating whether the backoff should be invoked when an AC gains
+      * the right to start a TXOP but it does not transmit any frame (e.g., due to constraints
+diff --git a/src/wifi/model/frame-exchange-manager.cc b/src/wifi/model/frame-exchange-manager.cc
+index 1c19a2fcd..0c185fc7e 100644
+--- a/src/wifi/model/frame-exchange-manager.cc
++++ b/src/wifi/model/frame-exchange-manager.cc
+@@ -333,7 +333,18 @@ FrameExchangeManager::ReceivedMacHdr(const WifiMacHeader& macHdr,
+ {
+     NS_LOG_FUNCTION(this << macHdr << txVector << psduDuration.As(Time::MS));
+     m_ongoingRxInfo = {macHdr, txVector, Simulator::Now() + psduDuration};
+-    UpdateNav(macHdr, txVector, psduDuration);
++    if (NeedNavUpdate(macHdr, txVector, psduDuration))
++    {
++        UpdateNav(macHdr, txVector, psduDuration);
++    }
++}
 +
 +bool
-+QosTxop::ConsumePedcaStage2InitialFrame(uint8_t linkId)
++FrameExchangeManager::NeedNavUpdate(const WifiMacHeader& /* hdr */,
++                                    const WifiTxVector& /* txVector */,
++                                    Time /* psduDuration */)
 +{
-+    auto& link = GetLink(linkId);
-+    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2 ||
-+        !link.pedcaStage2InitialFramePending)
-+    {
-+        return false;
-+    }
-+    link.pedcaStage2InitialFramePending = false;
 +    return true;
-+}
-
+ }
+ 
+ std::optional<std::reference_wrapper<const FrameExchangeManager::OngoingRxInfo>>
+@@ -1147,6 +1158,11 @@ FrameExchangeManager::DropMpduIfRetryLimitReached(Ptr<WifiPsdu> psdu)
+         DequeueMpdu(mpdu);
+     }
+ 
++    if (droppedMpdu && m_dcf)
++    {
++        m_dcf->ResetPsrc(m_linkId); // P-EDCA: a dropped frame also clears PSRC
++    }
++
+     return droppedMpdu;
+ }
+ 
+@@ -1443,7 +1459,10 @@ FrameExchangeManager::PostProcessFrame(Ptr<const WifiPsdu> psdu, const WifiTxVec
+ {
+     NS_LOG_FUNCTION(this << psdu << txVector);
+ 
+-    UpdateNav(psdu->GetHeader(0), txVector);
++    if (NeedNavUpdate(psdu->GetHeader(0), txVector, Time{0}))
++    {
++        UpdateNav(psdu->GetHeader(0), txVector);
++    }
+ }
+ 
+ void
+diff --git a/src/wifi/model/frame-exchange-manager.h b/src/wifi/model/frame-exchange-manager.h
+index 8b60bf66d..501a87708 100644
+--- a/src/wifi/model/frame-exchange-manager.h
++++ b/src/wifi/model/frame-exchange-manager.h
+@@ -370,6 +370,23 @@ class FrameExchangeManager : public Object
+      */
+     virtual void ProtectionCompleted();
+ 
++    /**
++     * Called right before the NAV is updated based on a received MAC header, i.e., at the end
++     * of the reception of a PSDU and, if the PHY notifies the end of the reception of MAC
++     * headers, also when the MAC header of a PSDU being received has been decoded. Subclasses
++     * may intercept special frames here (e.g., the P-EDCA DS-CTS, which an eligible P-EDCA STA
++     * must not set its NAV from).
++     *
++     * @param hdr the received MAC header
++     * @param txVector TxVector of the PSDU containing the MAC header
++     * @param psduDuration the remaining duration of the PSDU being received (zero if the
++     *                     reception of the PSDU has been completed)
++     * @return true if the NAV has to be updated based on the given MAC header
++     */
++    virtual bool NeedNavUpdate(const WifiMacHeader& hdr,
++                               const WifiTxVector& txVector,
++                               Time psduDuration);
++
+     /**
+      * Update the NAV, if needed, based on the Duration/ID of the given MAC header and the given
+      * surplus.
+diff --git a/src/wifi/model/he/he-phy.cc b/src/wifi/model/he/he-phy.cc
+index 6a98f97d3..1a7eb612b 100644
+--- a/src/wifi/model/he/he-phy.cc
++++ b/src/wifi/model/he/he-phy.cc
+@@ -1286,6 +1286,12 @@ uint64_t
+ HePhy::ObtainNextUid(const WifiTxVector& txVector)
+ {
+     NS_LOG_FUNCTION(this << txVector);
++    if (const auto sameContentUid = m_wifiPhy->TakeNextTxPpduUid())
++    {
++        // PPDU with content identical to PPDUs sent simultaneously by other stations; it is not
++        // a PPDU soliciting a response, hence m_previouslyTxPpduUid is left unchanged
++        return *sameContentUid;
++    }
+     uint64_t uid;
+     if (txVector.IsUlMu() || txVector.IsTriggerResponding())
+     {
+diff --git a/src/wifi/model/phy-entity.cc b/src/wifi/model/phy-entity.cc
+index 224fdb003..2c774db98 100644
+--- a/src/wifi/model/phy-entity.cc
++++ b/src/wifi/model/phy-entity.cc
+@@ -949,9 +949,11 @@ PhyEntity::HandleRxPpduWithSameContent(Ptr<Event> event,
+                                        Ptr<const WifiPpdu> ppdu,
+                                        RxPowerWattPerChannelBand& rxPower)
+ {
+-    if (const auto maxDelay =
+-            m_wifiPhy->GetPhyEntityForPpdu(ppdu)->GetMaxDelayPpduSameUid(ppdu->GetTxVector());
+-        Simulator::Now() - event->GetStartTime() > maxDelay)
++    const auto maxDelay =
++        (ppdu->GetUid() & WifiPhy::SAME_CONTENT_PPDU_UID_FLAG)
++            ? m_wifiPhy->GetMaxDelaySameContentPpdu()
++            : m_wifiPhy->GetPhyEntityForPpdu(ppdu)->GetMaxDelayPpduSameUid(ppdu->GetTxVector());
++    if (Simulator::Now() - event->GetStartTime() > maxDelay)
+     {
+         // This PPDU arrived too late to be decoded properly. The PPDU is dropped and added as
+         // interference
+@@ -1377,6 +1379,10 @@ uint64_t
+ PhyEntity::ObtainNextUid(const WifiTxVector& /* txVector */)
+ {
+     NS_LOG_FUNCTION(this);
++    if (const auto uid = m_wifiPhy->TakeNextTxPpduUid())
++    {
++        return *uid;
++    }
+     return m_globalPpduUid++;
+ }
+ 
+diff --git a/src/wifi/model/qos-frame-exchange-manager.cc b/src/wifi/model/qos-frame-exchange-manager.cc
+index 46c5dd28f..4ab9c76d8 100644
 --- a/src/wifi/model/qos-frame-exchange-manager.cc
 +++ b/src/wifi/model/qos-frame-exchange-manager.cc
-@@ -682,14 +682,29 @@ QosFrameExchangeManager::TransmissionSucceeded()
+@@ -9,11 +9,14 @@
+ #include "qos-frame-exchange-manager.h"
+ 
+ #include "ap-wifi-mac.h"
++#include "qos-txop.h"
+ #include "wifi-mac-queue.h"
+ #include "wifi-mac-trailer.h"
+ 
+ #include "ns3/abort.h"
++#include "ns3/erp-ofdm-phy.h"
+ #include "ns3/log.h"
++#include "ns3/ofdm-phy.h"
+ 
+ #undef NS_LOG_APPEND_CONTEXT
+ #define NS_LOG_APPEND_CONTEXT WIFI_FEM_NS_LOG_APPEND_CONTEXT
+@@ -80,6 +83,7 @@ QosFrameExchangeManager::DoDispose()
+     m_edca = nullptr;
+     m_edcaBackingOff = nullptr;
+     m_pifsRecoveryEvent.Cancel();
++    m_pedcaEnterStage2Event.Cancel();
+     FrameExchangeManager::DoDispose();
+ }
+ 
+@@ -165,6 +169,64 @@ QosFrameExchangeManager::CancelPifsRecovery()
+     NotifyChannelReleased(m_edca);
+ }
+ 
++void
++QosFrameExchangeManager::SendPedcaDsCts(Ptr<QosTxop> edca)
++{
++    NS_LOG_FUNCTION(this << edca);
++
++    WifiMacHeader dsCts;
++    dsCts.SetType(WIFI_MAC_CTL_CTS);
++    dsCts.SetDsNotFrom();
++    dsCts.SetDsNotTo();
++    dsCts.SetNoMoreFragments();
++    dsCts.SetNoRetry();
++    dsCts.SetAddr1(edca->GetPedcaDsCtsAddress());
++    const auto window = edca->GetPedcaStage2Window(m_linkId);
++    dsCts.SetDuration(window); // the P-EDCA contention duration
++
++    // The DS-CTS is sent in a non-HT (duplicate) PPDU at 6 Mb/s. Take bandwidth and the other
++    // parameters from the RTS TXVECTOR and force the rate.
++    WifiTxVector dsCtsTxVector =
++        GetWifiRemoteStationManager()->GetRtsTxVector(dsCts.GetAddr1(), m_allowedWidth);
++    dsCtsTxVector.SetMode(m_phy->GetPhyBand() == WIFI_PHY_BAND_2_4GHZ
++                              ? ErpOfdmPhy::GetErpOfdmRate6Mbps()
++                              : OfdmPhy::GetOfdmRate6Mbps());
++    dsCtsTxVector.SetPreambleType(WIFI_PREAMBLE_LONG);
++
++    auto mpdu = Create<WifiMpdu>(Create<Packet>(), dsCts);
++    const auto txDuration =
++        WifiPhy::CalculateTxDuration(mpdu->GetSize(), dsCtsTxVector, m_phy->GetPhyBand());
++
++    // The DS-CTS does not initiate a TXOP (it is not sent after the 10.23.2.4 backoff), but the
++    // EDCAF has been granted access and releases the channel when the DS-CTS ends. Record the
++    // (empty) TXOP so that QosTxop::NotifyChannelReleased() generates a new backoff and requests
++    // access again for the P-EDCA contention.
++    m_dcf = edca;
++    m_edca = edca;
++    edca->NotifyChannelAccessed(m_linkId, Time{0});
++
++    // All DS-CTS frames are identical (no TA, same RA and Duration, fixed scrambler seed), hence
++    // DS-CTS frames sent in the same slot by several P-EDCA STAs add up at the receivers instead
++    // of colliding. Model this by giving them the same PPDU UID.
++    m_phy->SetNextTxPpduUid(WifiPhy::GetSameContentPpduUid());
++    ForwardMpduDown(mpdu, dsCtsTxVector);
++    m_phy->TakeNextTxPpduUid(); // in case the PHY did not build a PPDU (e.g., PHY off)
++    edca->IncrementPsrc(m_linkId);
++
++    // The Duration of a CTS counts from the end of the frame, and that is also when receivers
++    // enter the P-EDCA contention (see NeedNavUpdate). Enter first, so that the backoff
++    // generated upon channel release already uses the Stage-2 parameters.
++    Simulator::Schedule(txDuration, &QosTxop::EnterPedcaStage2, edca, m_linkId, window);
++    Simulator::Schedule(txDuration, [this, edca]() {
++        ResetTxNav(); // the DS-CTS Duration does not belong to a TXOP of ours
++        NotifyChannelReleased(edca);
++        if (m_edca == edca)
++        {
++            m_edca = nullptr;
++        }
++    });
++}
++
+ bool
+ QosFrameExchangeManager::StartTransmission(Ptr<Txop> edca, MHz_u allowedWidth)
+ {
+@@ -186,6 +248,15 @@ QosFrameExchangeManager::StartTransmission(Ptr<Txop> edca, MHz_u allowedWidth)
+ 
+     m_allowedWidth = allowedWidth;
+     auto qosTxop = StaticCast<QosTxop>(edca);
++
++    if (qosTxop->IsPedcaDsCtsPending(m_linkId))
++    {
++        // We won contention under DS-CTS access parameters: send the DS-CTS instead of a data
++        // frame. The P-EDCA contention (and the TXOP started with an RTS) follows the DS-CTS.
++        SendPedcaDsCts(qosTxop);
++        return true;
++    }
++
+     return StartTransmission(qosTxop, qosTxop->GetTxopLimit(m_linkId));
+ }
+ 
+@@ -628,6 +699,11 @@ QosFrameExchangeManager::TransmissionSucceeded()
          return;
      }
-
--    if (m_edca->IsPedcaStage2(m_linkId))
--    {
--        // Step 6 exit path: we won Stage 2, and the RTS/CTS + data + ack exchange it forced has
--        // now concluded successfully. Leave Stage 2; if more AC_VO frames remain and QSRC/PSRC
--        // still allow it, the next NotifyAccessRequested() re-enters DS_CTS_PENDING on its own.
--        m_edca->ExitPedcaStage2(m_linkId);
--    }
-+    if (m_edca->IsPedcaStage2(m_linkId))
-+    {
-+        if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
-+            m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
-+        {
-+            // TXOP continues under the same channel hold Stage 2 already won: stay in Stage 2
-+            // so the exit (and P-EDCA bookkeeping) happens once the whole TXOP ends, not after
-+            // its first frame. GetPsduProtection() only forces RTS/CTS for the TXOP's initial
-+            // frame (QosTxop::ConsumePedcaStage2InitialFrame), so this and later continuation
-+            // frames fall through to ordinary protection decisions, exactly like TXOP
-+            // continuation frames for any other AC -- they're already covered by the NAV the
-+            // first frame's own Duration field set.
-+            NS_LOG_DEBUG("Won Stage 2, TXOP continues: staying in Stage 2 until TXOP ends");
-+        }
-+        else
-+        {
-+            // Step 6 exit path: we won Stage 2, and either this was a single-frame TXOP or
-+            // there is no more TXOP time/no more frames left. Leave Stage 2; if more AC_VO
-+            // frames remain and QSRC/PSRC still allow it, the next NotifyAccessRequested()
-+            // re-enters DS_CTS_PENDING on its own.
-+            m_edca->ExitPedcaStage2(m_linkId);
-+        }
-+    }
-
+ 
++    // P-EDCA: the frame exchange initiated with an RTS in the P-EDCA contention succeeded (one or
++    // more MPDUs delivered). Restore the EDCA parameters and resume the other ACs; the TXOP
++    // itself continues below as a regular EDCA TXOP (only its initial frame had to be an RTS).
++    m_edca->ExitPedcaStage2(m_linkId);
++
      if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
          m_edca->GetRemainingTxop(m_linkId) > m_phy->GetSifs())
      {
-
-(TransmissionFailed() is intentionally left unchanged: a failed RTS/CTS
-means the reservation was never actually established for this attempt --
-most likely a Stage-2 collision with another P-EDCA STA's RTS -- so exiting
-Stage 2 immediately, rather than trying to continue a TXOP that was never
-secured, is still correct.)
-
+@@ -664,6 +740,12 @@ QosFrameExchangeManager::TransmissionFailed(bool forceCurrentCw)
+         return;
+     }
+ 
++    // P-EDCA: the RTS sent in the P-EDCA contention got no CTS (most likely it collided with the
++    // RTS of another P-EDCA STA) or the frame exchange failed. Leave the P-EDCA contention
++    // first, so that UpdateFailedCw() below applies the EDCA CWmin/CWmax. If PSRC still allows
++    // it, the next access request goes back to DS-CTS contention.
++    m_edca->ExitPedcaStage2(m_linkId);
++
+     if (m_initialFrame)
+     {
+         // The backoff procedure shall be invoked by an EDCAF when the transmission
+@@ -837,6 +919,63 @@ QosFrameExchangeManager::UpdateNav(const WifiMacHeader& hdr,
+     FrameExchangeManager::UpdateNav(hdr, txVector, surplus);
+ }
+ 
++bool
++QosFrameExchangeManager::NeedNavUpdate(const WifiMacHeader& hdr,
++                                       const WifiTxVector& txVector,
++                                       Time psduDuration)
++{
++    NS_LOG_FUNCTION(this << hdr << txVector << psduDuration.As(Time::US));
++
++    auto voTxop = m_mac->GetQosTxop(AC_VO);
++    if (!hdr.IsCts() || !voTxop || hdr.GetAddr1() != voTxop->GetPedcaDsCtsAddress())
++    {
++        return FrameExchangeManager::NeedNavUpdate(hdr, txVector, psduDuration);
++    }
++
++    // P-EDCA DS-CTS
++    if (m_mac->GetPEdcaSupported() && voTxop->PedcaEligible(m_linkId))
++    {
++        // An eligible P-EDCA STA (AP or non-AP) takes part in the P-EDCA contention instead of
++        // deferring. The contention starts at the end of the DS-CTS, which is also where the
++        // Duration of a CTS is counted from.
++        NS_LOG_DEBUG("Overheard DS-CTS: joining the P-EDCA contention instead of setting NAV");
++        m_pedcaEnterStage2Event.Cancel();
++        m_pedcaEnterStage2Event = Simulator::Schedule(psduDuration,
++                                                      &QosTxop::EnterPedcaStage2,
++                                                      voTxop,
++                                                      m_linkId,
++                                                      hdr.GetDuration());
++        return false;
++    }
++
++    // Legacy STAs and P-EDCA STAs that are not eligible defer like for any other CTS. Remember
++    // the NAV set by the DS-CTS, so that an RTS sent in the P-EDCA contention can be answered.
++    NS_LOG_DEBUG("Overheard DS-CTS: not P-EDCA eligible, setting NAV");
++    m_pedcaDsCtsNavEnd = Simulator::Now() + psduDuration + hdr.GetDuration();
++    return true;
++}
++
++bool
++QosFrameExchangeManager::CanRespondToRtsDuringPedca() const
++{
++    NS_LOG_FUNCTION(this);
++    const auto now = Simulator::Now();
++    if (!m_mac->GetPEdcaSupported() || m_pedcaDsCtsNavEnd <= now || m_navEnd > m_pedcaDsCtsNavEnd)
++    {
++        // the NAV was not set by a DS-CTS, or it was extended by some other frame
++        return false;
++    }
++    // The NAV (basic NAV for HE STAs) has only been set by a DS-CTS: the RTS was sent in the
++    // P-EDCA contention that the DS-CTS protects, hence respond if no other NAV (e.g., the
++    // intra-BSS NAV of HE STAs) indicates busy medium.
++    auto self = const_cast<QosFrameExchangeManager*>(this);
++    const auto navEnd = m_navEnd;
++    self->m_navEnd = now;
++    const auto idle = VirtualCsMediumIdle();
++    self->m_navEnd = navEnd;
++    return idle;
++}
++
+ void
+ QosFrameExchangeManager::NavResetTimeout()
+ {
+@@ -868,7 +1007,7 @@ QosFrameExchangeManager::ReceiveMpdu(Ptr<const WifiMpdu> mpdu,
+         // frame matches the saved TXOP holder address, then the STA shall send the
+         // CTS frame after SIFS, without regard for, and without resetting, its NAV.
+         // (sec. 10.22.2.4 of 802.11-2016)
+-        if (hdr.GetAddr2() == m_txopHolder || VirtualCsMediumIdle())
++        if (hdr.GetAddr2() == m_txopHolder || VirtualCsMediumIdle() || CanRespondToRtsDuringPedca())
+         {
+             NS_LOG_DEBUG("Received RTS from=" << hdr.GetAddr2() << ", schedule CTS");
+             m_sendCtsEvent = Simulator::Schedule(m_phy->GetSifs(),
+diff --git a/src/wifi/model/qos-frame-exchange-manager.h b/src/wifi/model/qos-frame-exchange-manager.h
+index ca4666872..5fb006f19 100644
+--- a/src/wifi/model/qos-frame-exchange-manager.h
++++ b/src/wifi/model/qos-frame-exchange-manager.h
+@@ -127,6 +127,26 @@ class QosFrameExchangeManager : public FrameExchangeManager
+     void ReceivedMacHdr(const WifiMacHeader& macHdr,
+                         const WifiTxVector& txVector,
+                         Time psduDuration) override;
++    bool NeedNavUpdate(const WifiMacHeader& hdr,
++                       const WifiTxVector& txVector,
++                       Time psduDuration) override;
++
++    /**
++     * Send a P-EDCA (IEEE 802.11bn) DS-CTS frame: a CTS addressed to the DS-CTS RA whose
++     * Duration is the P-EDCA contention duration, sent in a non-HT PPDU at 6 Mb/s. No response
++     * is expected. The sender enters the P-EDCA contention and releases the channel when the
++     * DS-CTS ends.
++     * @param edca the AC_VO EDCAF that won access while P-EDCA eligible
++     */
++    void SendPedcaDsCts(Ptr<QosTxop> edca);
++
++    /**
++     * An RTS addressed to this station has been received while its NAV is set: check whether
++     * the NAV was only set by a DS-CTS, in which case the RTS was sent in the P-EDCA contention
++     * protected by that DS-CTS and a CTS can be sent in response.
++     * @return true if a CTS can be sent in response to the RTS
++     */
++    bool CanRespondToRtsDuringPedca() const;
+ 
+     /**
+      * Request the FrameExchangeManager to start a frame exchange sequence.
+@@ -213,10 +233,12 @@ class QosFrameExchangeManager : public FrameExchangeManager
+      */
+     void CancelPifsRecovery();
+ 
+-    bool m_initialFrame;         //!< true if transmitting the initial frame of a TXOP
+-    bool m_pifsRecovery;         //!< true if performing a PIFS recovery after failure
+-    EventId m_pifsRecoveryEvent; //!< event associated with an attempt of PIFS recovery
+-    Ptr<Txop> m_edcaBackingOff;  //!< channel access function that invoked backoff during TXOP
++    bool m_initialFrame;             //!< true if transmitting the initial frame of a TXOP
++    bool m_pifsRecovery;             //!< true if performing a PIFS recovery after failure
++    EventId m_pifsRecoveryEvent;     //!< event associated with an attempt of PIFS recovery
++    Ptr<Txop> m_edcaBackingOff;      //!< channel access function that invoked backoff during TXOP
++    EventId m_pedcaEnterStage2Event; //!< event to join a P-EDCA contention at the end of a DS-CTS
++    Time m_pedcaDsCtsNavEnd{0};      //!< NAV end set by the last DS-CTS, if not eligible
+ };
+ 
+ } // namespace ns3
+diff --git a/src/wifi/model/qos-txop.cc b/src/wifi/model/qos-txop.cc
+index fb0e39257..41d9e057d 100644
+--- a/src/wifi/model/qos-txop.cc
++++ b/src/wifi/model/qos-txop.cc
+@@ -29,6 +29,7 @@
+ #include "ns3/ht-configuration.h"
+ #include "ns3/ht-frame-exchange-manager.h"
+ #include "ns3/log.h"
++#include "ns3/mac48-address.h"
+ #include "ns3/pointer.h"
+ #include "ns3/random-variable-stream.h"
+ #include "ns3/simulator.h"
+@@ -57,6 +58,62 @@ QosTxop::GetTypeId()
+                           BooleanValue(true),
+                           MakeBooleanAccessor(&QosTxop::m_useExplicitBarAfterMissedBlockAck),
+                           MakeBooleanChecker())
++            .AddAttribute("PEdcaQsrcThreshold",
++                          "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (0 is reserved).",
++                          UintegerValue(1),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaQsrcThr),
++                          MakeUintegerChecker<uint8_t>(1))
++            .AddAttribute("PEdcaPsrcThreshold",
++                          "P-EDCA: PSRC limit; a DS-CTS may be sent only while PSRC is below it.",
++                          UintegerValue(1),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaPsrcThr),
++                          MakeUintegerChecker<uint8_t>(1, 4))
++            .AddAttribute("PEdcaDsAifsn",
++                          "P-EDCA: AIFSN of DSAIFS[AC_VO] = aSIFSTime + (AIFSN + DSr) x "
++                          "aSlotTime, used while contending to send a DS-CTS (2 in the draft).",
++                          UintegerValue(2),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaDsAifsn),
++                          MakeUintegerChecker<uint8_t>(1, 15))
++            .AddAttribute("PEdcaCwDs",
++                          "P-EDCA: CWds[AC_VO]; DSr is drawn uniformly in [0, CWds] for every "
++                          "DS-CTS attempt. 0 disables slot randomization. Verify the default "
++                          "and any reserved values against the target draft.",
++                          UintegerValue(7),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
++                          MakeUintegerChecker<uint32_t>(0, 1023))
++            .AddAttribute("PEdcaStage2Aifsn",
++                          "P-EDCA: AIFSN used by eligible STAs while contending inside the "
++                          "P-EDCA contention (Stage 2) that follows a DS-CTS.",
++                          UintegerValue(2),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaStage2Aifsn),
++                          MakeUintegerChecker<uint8_t>(1, 15))
++            .AddAttribute("PEdcaStage2CwMin",
++                          "P-EDCA: CWmin used by eligible STAs inside Stage 2. CW is set to "
++                          "min(CWmax, 2^QSRC x (CWmin + 1) - 1) when Stage 2 starts.",
++                          UintegerValue(3),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMin),
++                          MakeUintegerChecker<uint32_t>(0, 1023))
++            .AddAttribute("PEdcaStage2CwMax",
++                          "P-EDCA: CWmax used by eligible STAs inside Stage 2.",
++                          UintegerValue(7),
++                          MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMax),
++                          MakeUintegerChecker<uint32_t>(0, 1023))
++            .AddAttribute("PEdcaStage2Window",
++                          "P-EDCA: the P-EDCA contention duration, carried in the Duration "
++                          "field of the DS-CTS. Zero (default) means aSIFSTime + "
++                          "(PEdcaStage2Aifsn + PEdcaStage2CwMax) x aSlotTime (97 us with 9 us "
++                          "slots and the default values), i.e. the window ends at the latest "
++                          "possible start of the RTS.",
++                          TimeValue(Time{0}),
++                          MakeTimeAccessor(&QosTxop::m_pedcaStage2Window),
++                          MakeTimeChecker(Time{0}))
++            .AddAttribute("PEdcaDsCtsAddress",
++                          "P-EDCA: the RA used to identify a DS-CTS frame. Defaults to the "
++                          "unicast address with OUI 00:0F:AC proposed in the 802.11bn PDT; "
++                          "verify against the draft you are targeting.",
++                          Mac48AddressValue(Mac48Address("00:0F:AC:47:43:00")),
++                          MakeMac48AddressAccessor(&QosTxop::m_pedcaDsCtsAddress),
++                          MakeMac48AddressChecker())
+             .AddAttribute("AddBaResponseTimeout",
+                           "The timeout to wait for ADDBA response after the Ack to "
+                           "ADDBA request is received.",
+@@ -159,6 +216,10 @@ QosTxop::DoDispose()
+         m_baManager->Dispose();
+     }
+     m_baManager = nullptr;
++    for (const auto& [id, link] : GetLinks())
++    {
++        GetLink(id).pedcaStage2Timeout.Cancel();
++    }
+     Txop::DoDispose();
+ }
+ 
+@@ -252,33 +313,261 @@ QosTxop::EdcaDisabled(uint8_t linkId) const
+ uint32_t
+ QosTxop::GetMinCw(uint8_t linkId) const
+ {
++    const auto& link = GetLink(linkId);
++    switch (link.pedcaPhase)
++    {
++    case QosLinkEntity::PedcaPhase::STAGE2:
++        return m_pedcaStage2CwMin;
++    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
++        return m_pedcaCwDs; // DSr is always drawn in [0, CWds]
++    default:
++        break;
++    }
+     if (!MuEdcaTimerRunning(linkId))
+     {
+-        return GetLink(linkId).cwMin;
++        return link.cwMin;
+     }
+     NS_ASSERT(!EdcaDisabled(linkId));
+-    return GetLink(linkId).muCwMin;
++    return link.muCwMin;
+ }
+ 
+ uint32_t
+ QosTxop::GetMaxCw(uint8_t linkId) const
+ {
++    const auto& link = GetLink(linkId);
++    switch (link.pedcaPhase)
++    {
++    case QosLinkEntity::PedcaPhase::STAGE2:
++        return m_pedcaStage2CwMax;
++    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
++        return m_pedcaCwDs;
++    default:
++        break;
++    }
+     if (!MuEdcaTimerRunning(linkId))
+     {
+-        return GetLink(linkId).cwMax;
++        return link.cwMax;
+     }
+     NS_ASSERT(!EdcaDisabled(linkId));
+-    return GetLink(linkId).muCwMax;
++    return link.muCwMax;
+ }
+ 
+ uint8_t
+ QosTxop::GetAifsn(uint8_t linkId) const
+ {
++    const auto& link = GetLink(linkId);
++    switch (link.pedcaPhase)
++    {
++    case QosLinkEntity::PedcaPhase::STAGE2:
++        return m_pedcaStage2Aifsn;
++    case QosLinkEntity::PedcaPhase::DS_CTS_PENDING:
++        return m_pedcaDsAifsn;
++    default:
++        break;
++    }
+     if (!MuEdcaTimerRunning(linkId))
+     {
+-        return GetLink(linkId).aifsn;
++        return link.aifsn;
++    }
++    return link.muAifsn;
++}
++
++bool
++QosTxop::PedcaEligible(uint8_t linkId)
++{
++    return m_mac->GetPEdcaSupported() && m_ac == AC_VO && !EdcaDisabled(linkId) &&
++           HasFramesToTransmit(linkId) && GetStaRetryCount(linkId) >= m_pedcaQsrcThr &&
++           GetPsrc(linkId) < m_pedcaPsrcThr;
++}
++
++bool
++QosTxop::IsPedcaDsCtsPending(uint8_t linkId) const
++{
++    return GetLink(linkId).pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
++}
++
++bool
++QosTxop::IsPedcaStage2(uint8_t linkId) const
++{
++    return GetLink(linkId).pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2;
++}
++
++Mac48Address
++QosTxop::GetPedcaDsCtsAddress() const
++{
++    return m_pedcaDsCtsAddress;
++}
++
++Time
++QosTxop::GetPedcaStage2Window(uint8_t linkId) const
++{
++    if (m_pedcaStage2Window.IsStrictlyPositive())
++    {
++        return m_pedcaStage2Window;
++    }
++    auto phy = m_mac->GetWifiPhy(linkId);
++    NS_ASSERT(phy);
++    return phy->GetSifs() + (m_pedcaStage2Aifsn + m_pedcaStage2CwMax) * phy->GetSlot();
++}
++
++void
++QosTxop::SetPedcaCw(uint8_t linkId)
++{
++    // CW[AC] = min(CWmax[AC], 2^QSRC[AC] x (CWmin[AC] + 1) - 1), evaluated with the CWmin/CWmax
++    // of the current P-EDCA phase (10.23.2.2 and 37.x of the 802.11bn draft)
++    auto& link = GetLink(linkId);
++    const auto qsrc = std::min<std::size_t>(link.staRetryCount, 31);
++    const uint64_t cw = (uint64_t{1} << qsrc) * (uint64_t{GetMinCw(linkId)} + 1) - 1;
++    link.cw = static_cast<uint32_t>(std::min<uint64_t>(GetMaxCw(linkId), cw));
++    m_cwTrace(link.cw, linkId);
++}
++
++void
++QosTxop::UpdateAccessParamsBeforeRequest(uint8_t linkId)
++{
++    NS_LOG_FUNCTION(this << +linkId);
++    UpdatePedcaContention(linkId);
++}
++
++bool
++QosTxop::UpdatePedcaContention(uint8_t linkId)
++{
++    auto& link = GetLink(linkId);
++    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2)
++    {
++        // STAGE2 is entered/left only through EnterPedcaStage2()/ExitPedcaStage2()
++        return false;
++    }
++    const bool eligible = PedcaEligible(linkId);
++    const bool pending = (link.pedcaPhase == QosLinkEntity::PedcaPhase::DS_CTS_PENDING);
++    if (eligible == pending)
++    {
++        return false;
++    }
++    if (eligible)
++    {
++        // DS-CTS contention: DSAIFS = aSIFSTime + (AIFSN + DSr) x aSlotTime, with DSr drawn
++        // in [0, CWds] for every DS-CTS transmission (no binary exponential backoff)
++        NS_LOG_DEBUG("QSRC/PSRC allow P-EDCA on link " << +linkId << ": contending for DS-CTS");
++        link.pedcaPhase = QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
++        link.cw = m_pedcaCwDs;
++        m_cwTrace(link.cw, linkId);
++    }
++    else
++    {
++        // PSRC hit its limit, the queue emptied or the frame was dropped/delivered before this
++        // AC sent a DS-CTS: fall back to normal EDCA
++        NS_LOG_DEBUG("No longer P-EDCA eligible on link " << +linkId << ": back to EDCA");
++        link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
++        SetPedcaCw(linkId);
++    }
++    GenerateBackoff(linkId);
++    return true;
++}
++
++void
++QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
++{
++    NS_LOG_FUNCTION(this << +linkId << window.As(Time::US));
++    auto& link = GetLink(linkId);
++    auto cam = m_mac->GetChannelAccessManager(linkId);
++
++    link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
++    link.pedcaStage2End = Simulator::Now() + window;
++    SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
++
++    // Only the eligible AC_VO EDCAF of this station may contend during the P-EDCA contention:
++    // freeze the other EDCAFs for the window. They are resumed early by ExitPedcaStage2() if
++    // this AC delivers its frame(s) before the window ends.
++    for (AcIndex ac : {AC_BE, AC_BK, AC_VI})
++    {
++        if (auto txop = m_mac->GetQosTxop(ac))
++        {
++            cam->DisableEdcaFor(txop, window);
++        }
++    }
++
++    // If access is GRANTED, this is the DS-CTS sender: the backoff is generated and access is
++    // requested again when the DS-CTS "TXOP" is released (QosTxop::NotifyChannelReleased)
++    if (link.access != GRANTED)
++    {
++        GenerateBackoff(linkId);
++        if (link.access == REQUESTED)
++        {
++            cam->NotifyBackoffChangedNow();
++        }
++        else if (HasFramesToTransmit(linkId))
++        {
++            RequestAccess(linkId);
++        }
++    }
++
++    link.pedcaStage2Timeout.Cancel();
++    link.pedcaStage2Timeout =
++        Simulator::Schedule(window, &QosTxop::PedcaStage2Timeout, this, linkId);
++}
++
++void
++QosTxop::PedcaStage2Timeout(uint8_t linkId)
++{
++    NS_LOG_FUNCTION(this << +linkId);
++    if (GetLink(linkId).access == GRANTED)
++    {
++        // The window ends at the latest possible start of the RTS; if we have been granted
++        // access, our RTS (and possibly the rest of the TXOP) is under way and protected by the
++        // RTS/CTS Duration. Stage 2 is left when that exchange concludes
++        // (QosFrameExchangeManager::TransmissionSucceeded/Failed) or the channel is released.
++        NS_LOG_DEBUG("P-EDCA contention window ended during our own exchange");
++        return;
++    }
++    ExitPedcaStage2(linkId);
++}
++
++void
++QosTxop::ExitPedcaStage2(uint8_t linkId)
++{
++    auto& link = GetLink(linkId);
++    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2)
++    {
++        return; // already left through another exit path; nothing to do
++    }
++    NS_LOG_FUNCTION(this << +linkId);
++    link.pedcaStage2Timeout.Cancel();
++    link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
++
++    // Restore the dot11EDCATable parameters and set
++    // CW[AC_VO] = min(CWmax[AC_VO], 2^QSRC[AC_VO] x (CWmin[AC_VO] + 1) - 1). After a successful
++    // delivery QSRC has already been reset (ResetCw), hence CW = CWmin.
++    SetPedcaCw(linkId);
++
++    // resume the other EDCAFs, if they are still frozen by EnterPedcaStage2()
++    auto cam = m_mac->GetChannelAccessManager(linkId);
++    for (AcIndex ac : {AC_BE, AC_BK, AC_VI})
++    {
++        if (auto txop = m_mac->GetQosTxop(ac))
++        {
++            cam->ResumeEdcaIfDisabledUntil(txop, link.pedcaStage2End);
++        }
++    }
++
++    if (link.access == GRANTED)
++    {
++        // we are the TXOP holder: a new backoff is generated when the TXOP ends
++        // (NotifyChannelReleased), which must not happen in the middle of the TXOP
++        return;
++    }
++
++    // We lost (or never got to) the P-EDCA contention. If still eligible, go back to DS-CTS
++    // contention (a STA that did not initiate a TXOP may send another DS-CTS), otherwise
++    // resume normal EDCA with a fresh backoff.
++    if (!UpdatePedcaContention(linkId))
++    {
++        GenerateBackoff(linkId);
++    }
++    if (link.access == REQUESTED)
++    {
++        cam->NotifyBackoffChangedNow();
+     }
+-    return GetLink(linkId).muAifsn;
+ }
+ 
+ Ptr<BlockAckManager>
+@@ -633,6 +922,16 @@ QosTxop::NotifyChannelReleased(uint8_t linkId)
+     NS_LOG_FUNCTION(this << +linkId);
+     auto& link = GetLink(linkId);
+ 
++    if (link.pedcaPhase == QosLinkEntity::PedcaPhase::STAGE2 &&
++        !link.pedcaStage2Timeout.IsPending())
++    {
++        // the P-EDCA contention window expired while we held the channel and the exchange did
++        // not end through TransmissionSucceeded/Failed: leave Stage 2 before the backoff below
++        // is generated, so that it uses the normal EDCA parameters
++        link.access = NOT_REQUESTED;
++        ExitPedcaStage2(linkId);
++    }
++
+     if (link.startTxop)
+     {
+         NS_LOG_DEBUG("Terminating TXOP. Duration = " << Simulator::Now() - *link.startTxop);
+diff --git a/src/wifi/model/qos-txop.h b/src/wifi/model/qos-txop.h
+index 8c6a77552..6e078ca16 100644
+--- a/src/wifi/model/qos-txop.h
++++ b/src/wifi/model/qos-txop.h
+@@ -15,6 +15,7 @@
+ #include "qos-utils.h"
+ #include "txop.h"
+ 
++#include "ns3/mac48-address.h"
+ #include "ns3/traced-value.h"
+ 
+ #include <optional>
+@@ -403,6 +404,57 @@ class QosTxop : public Txop
+      */
+     uint8_t GetAifsn(uint8_t linkId) const override;
+ 
++    /**
++     * Check whether this AC may currently start P-EDCA (send a DS-CTS or take part in a P-EDCA
++     * contention) on the given link: P-EDCA enabled at the MAC, AC_VO, EDCA not disabled by the
++     * MU EDCA timer, frames queued, QSRC >= threshold and PSRC < limit.
++     * Non-const only because HasFramesToTransmit() is non-const.
++     * @param linkId the ID of the given link
++     * @return true if P-EDCA eligible
++     */
++    bool PedcaEligible(uint8_t linkId);
++    /**
++     * @param linkId the ID of the given link
++     * @return true if this AC is currently contending, under DS-CTS access parameters, for the
++     *         right to transmit a DS-CTS on the given link
++     */
++    bool IsPedcaDsCtsPending(uint8_t linkId) const;
++    /**
++     * @param linkId the ID of the given link
++     * @return true if this AC is currently in the P-EDCA contention (Stage 2) on the given link
++     */
++    bool IsPedcaStage2(uint8_t linkId) const;
++    /**
++     * @return the RA used to identify a DS-CTS frame
++     */
++    Mac48Address GetPedcaDsCtsAddress() const;
++    /**
++     * @param linkId the ID of the given link
++     * @return the P-EDCA contention duration (Duration field of the DS-CTS) on the given link
++     */
++    Time GetPedcaStage2Window(uint8_t linkId) const;
++    /**
++     * Enter the P-EDCA contention (Stage 2) on the given link: switch this AC's contention
++     * parameters to the Stage-2 values, freeze every other AC on this link for the window
++     * duration (so only AC_VO can win access on this station) and schedule the window expiry.
++     * Must be called at the end of the DS-CTS: by the sender when its DS-CTS transmission ends,
++     * by a receiving eligible P-EDCA STA when the DS-CTS reception ends.
++     * @param linkId the ID of the given link
++     * @param window the P-EDCA contention duration (the Duration field of the DS-CTS)
++     */
++    void EnterPedcaStage2(uint8_t linkId, Time window);
++    /**
++     * Leave the P-EDCA contention (Stage 2) on the given link: restore the dot11EDCATable
++     * parameters, set CW to min(CWmax, 2^QSRC x (CWmin + 1) - 1) and resume the other ACs.
++     * Idempotent: a no-op if this AC is not in Stage 2. Called when the RTS/CTS + data exchange
++     * started by a Stage-2 win concludes (success or failure), when the window expires without
++     * this AC holding the channel, and when the channel is released after the window expired.
++     * If this AC is the TXOP holder, no backoff is generated here (it is generated when the
++     * TXOP ends).
++     * @param linkId the ID of the given link
++     */
++    void ExitPedcaStage2(uint8_t linkId);
++
+   protected:
+     /**
+      * Structure holding information specific to a single link. Here, the meaning of
+@@ -421,10 +473,30 @@ class QosTxop : public Txop
+         uint8_t muAifsn{0};            //!< the MU AIFSN
+         Time muEdcaTimer{0};           //!< the MU EDCA Timer
+         Time muEdcaTimerStartTime{0};  //!< last start time of the MU EDCA Timer
++
++        /**
++         * P-EDCA (IEEE 802.11bn) contention phase for this AC on this link. NORMAL is regular
++         * EDCA. DS_CTS_PENDING means QSRC/PSRC allow P-EDCA and this AC is contending, using the
++         * DS-CTS access parameters, for the right to transmit a DS-CTS. STAGE2 means a DS-CTS
++         * (this station's own, or one overheard from another P-EDCA STA) has opened a P-EDCA
++         * contention in which only eligible P-EDCA STAs contend, using the Stage-2 access
++         * parameters, to initiate a TXOP with an RTS.
++         */
++        enum class PedcaPhase : uint8_t
++        {
++            NORMAL,
++            DS_CTS_PENDING,
++            STAGE2
++        };
++
++        PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
++        Time pedcaStage2End{0};                    //!< end of the current P-EDCA contention
++        EventId pedcaStage2Timeout;                //!< P-EDCA contention expiry event
+     };
+ 
+     void DoDispose() override;
+     void CreateQueue(AcIndex aci) override;
++    void UpdateAccessParamsBeforeRequest(uint8_t linkId) override;
+ 
+     /**
+      * Get a reference to the link associated with the given ID.
+@@ -450,6 +522,36 @@ class QosTxop : public Txop
+      */
+     bool IsQosOldPacket(Ptr<const WifiMpdu> mpdu);
+ 
++    /**
++     * Switch between NORMAL and DS_CTS_PENDING according to the current P-EDCA eligibility
++     * and, if the phase changed, set the CW accordingly and generate a new backoff.
++     * Does nothing in STAGE2.
++     * @param linkId the ID of the given link
++     * @return true if the phase changed (and a new backoff was generated)
++     */
++    bool UpdatePedcaContention(uint8_t linkId);
++    /**
++     * Set CW to min(CWmax, 2^QSRC x (CWmin + 1) - 1), using the CWmin/CWmax of the current
++     * P-EDCA phase.
++     * @param linkId the ID of the given link
++     */
++    void SetPedcaCw(uint8_t linkId);
++    /**
++     * Expiry of the P-EDCA contention window on the given link.
++     * @param linkId the ID of the given link
++     */
++    void PedcaStage2Timeout(uint8_t linkId);
++
++    uint8_t m_pedcaQsrcThr{1};        //!< P-EDCA QSRC threshold
++    uint8_t m_pedcaPsrcThr{1};        //!< P-EDCA PSRC threshold
++    uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
++    uint32_t m_pedcaCwDs{7};          //!< CWds: DSr is drawn in [0, CWds]
++    uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
++    uint32_t m_pedcaStage2CwMin{3};   //!< CWmin used by eligible STAs during Stage 2
++    uint32_t m_pedcaStage2CwMax{7};   //!< CWmax used by eligible STAs during Stage 2
++    Time m_pedcaStage2Window{0};      //!< P-EDCA contention duration (0: computed)
++    Mac48Address m_pedcaDsCtsAddress; //!< the RA used to identify a DS-CTS frame
++
+     AcIndex m_ac;                     //!< the access category
+     Ptr<BlockAckManager> m_baManager; //!< the block ack manager
+     uint8_t m_blockAckThreshold; /**< the block ack threshold (use BA mechanism if number of packets
+diff --git a/src/wifi/model/txop.cc b/src/wifi/model/txop.cc
+index a87e45e40..41bc74ef2 100644
+--- a/src/wifi/model/txop.cc
++++ b/src/wifi/model/txop.cc
+@@ -118,6 +118,10 @@ Txop::GetTypeId()
+             .AddTraceSource("CwTrace",
+                             "Trace source for contention window values",
+                             MakeTraceSourceAccessor(&Txop::m_cwTrace),
++                            "ns3::Txop::CwValueTracedCallback")
++            .AddTraceSource("PsrcTrace",
++                            "Trace source for P-EDCA Short Retry Count (PSRC) values",
++                            MakeTraceSourceAccessor(&Txop::m_psrcTrace),
+                             "ns3::Txop::CwValueTracedCallback");
+     return tid;
+ }
+@@ -323,6 +327,33 @@ Txop::GetStaRetryCount(uint8_t linkId) const
+     return GetLink(linkId).staRetryCount;
+ }
+ 
++std::size_t
++Txop::GetPsrc(uint8_t linkId) const
++{
++    return GetLink(linkId).psrc;
++}
++
++void
++Txop::IncrementPsrc(uint8_t linkId)
++{
++    NS_LOG_FUNCTION(this << +linkId);
++    auto& link = GetLink(linkId);
++    ++link.psrc;
++    m_psrcTrace(link.psrc, linkId);
++}
++
++void
++Txop::ResetPsrc(uint8_t linkId)
++{
++    NS_LOG_FUNCTION(this << +linkId);
++    auto& link = GetLink(linkId);
++    if (link.psrc != 0)
++    {
++        link.psrc = 0;
++        m_psrcTrace(0, linkId);
++    }
++}
++
+ void
+ Txop::ResetCw(uint8_t linkId)
+ {
+@@ -331,6 +362,9 @@ Txop::ResetCw(uint8_t linkId)
+     link.cw = GetMinCw(linkId);
+     m_cwTrace(link.cw, linkId);
+     link.staRetryCount = 0;
++    // P-EDCA: QSRC is reset on every successful delivery (Ack, BlockAck, HE/EHT MU responses all
++    // end up here), which is also when PSRC must be reset
++    ResetPsrc(linkId);
+ }
+ 
+ void
+@@ -759,10 +793,18 @@ Txop::RequestAccess(uint8_t linkId)
+     // ChannelAccessManager::RequestAccess().
+     if (GetLink(linkId).access == NOT_REQUESTED)
+     {
++        // give subclasses a chance to switch access parameters (and regenerate the backoff)
++        // before the ChannelAccessManager aligns the backoff start to a slot boundary
++        UpdateAccessParamsBeforeRequest(linkId);
+         m_mac->GetChannelAccessManager(linkId)->RequestAccess(this);
+     }
+ }
+ 
++void
++Txop::UpdateAccessParamsBeforeRequest(uint8_t /* linkId */)
++{
++}
++
+ void
+ Txop::GenerateBackoff(uint8_t linkId)
+ {
+diff --git a/src/wifi/model/txop.h b/src/wifi/model/txop.h
+index 471a12107..4ff68badb 100644
+--- a/src/wifi/model/txop.h
++++ b/src/wifi/model/txop.h
+@@ -322,6 +322,25 @@ class Txop : public Object
+      *         Retry Count (QSRC) maintained by QoS STAs for each AC on the given link
+      */
+     std::size_t GetStaRetryCount(uint8_t linkId) const;
++    /**
++     * Get the P-EDCA Short Retry Count (PSRC) for the given link, i.e., the number of
++     * DS-CTS frames sent since the last successful transmission or drop of a frame.
++     * @param linkId the ID of the given link
++     * @return the PSRC
++     */
++    std::size_t GetPsrc(uint8_t linkId) const;
++    /**
++     * Increment PSRC on the given link (call when a DS-CTS is actually transmitted).
++     * @param linkId the ID of the given link
++     */
++    void IncrementPsrc(uint8_t linkId);
++    /**
++     * Reset PSRC on the given link (call on successful Ack/BlockAck or MPDU drop).
++     * Deliberately separate from ResetCw(), which is also invoked by CW setters,
++     * DoInitialize() and ResetBackoff().
++     * @param linkId the ID of the given link
++     */
++    void ResetPsrc(uint8_t linkId);
+ 
+     /**
+      * Notify that the given link switched to sleep mode.
+@@ -503,6 +522,14 @@ class Txop : public Object
+      * @param linkId the ID of the given link
+      */
+     void RequestAccess(uint8_t linkId);
++    /**
++     * Called by RequestAccess() right before a new channel access request is passed to the
++     * ChannelAccessManager of the given link. The default implementation does nothing;
++     * QosTxop uses it to switch between normal EDCA and P-EDCA access parameters.
++     *
++     * @param linkId the ID of the given link
++     */
++    virtual void UpdateAccessParamsBeforeRequest(uint8_t linkId);
+ 
+     /**
+      * Return the time when the backoff procedure started on the given link.
+@@ -543,6 +570,7 @@ class Txop : public Object
+         std::size_t staRetryCount{0}; //!< the Station Short Retry Count (SSRC) maintained by
+                                       //!< non-QoS stations or the QoS STA Retry Count (QSRC)
+                                       //!< maintained by QoS STAs for each AC
++        std::size_t psrc{0};          //!< the P-EDCA Short Retry Count (PSRC)
+         ChannelAccessStatus access{NOT_REQUESTED}; //!< channel access status
+ 
+         mutable class
+@@ -579,6 +607,7 @@ class Txop : public Object
+ 
+     BackoffValueTracedCallback m_backoffTrace; //!< backoff trace value
+     CwValueTracedCallback m_cwTrace;           //!< CW trace value
++    CwValueTracedCallback m_psrcTrace;         //!< PSRC trace value
+ 
+   private:
+     /**
+diff --git a/src/wifi/model/wifi-default-protection-manager.cc b/src/wifi/model/wifi-default-protection-manager.cc
+index 46fd23671..b1ac2cf5f 100644
 --- a/src/wifi/model/wifi-default-protection-manager.cc
 +++ b/src/wifi/model/wifi-default-protection-manager.cc
-@@ -207,14 +207,17 @@ WifiDefaultProtectionManager::GetPsduProtection(const WifiMacHeader& hdr,
+@@ -9,6 +9,7 @@
+ #include "wifi-default-protection-manager.h"
+ 
+ #include "ap-wifi-mac.h"
++#include "qos-txop.h"
+ #include "sta-wifi-mac.h"
+ #include "wifi-mpdu.h"
+ #include "wifi-tx-parameters.h"
+@@ -205,8 +206,18 @@ WifiDefaultProtectionManager::GetPsduProtection(const WifiMacHeader& hdr,
                          m_mac->GetLinkForPhy(emlsrManager->GetMainPhyId()) != m_linkId);
      }
-
--    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending data,
--    // regardless of what WifiRemoteStationManager::NeedRts() would otherwise decide (frame
--    // size, whether the destination is known to support it, etc.), since neighbouring legacy
--    // STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS exchange for this data
--    // frame specifically.
--    bool pedcaNeedRts = false;
--    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
--    {
--        auto voTxop = m_mac->GetQosTxop(AC_VO);
--        pedcaNeedRts = voTxop && voTxop->IsPedcaStage2(m_linkId);
--    }
-+    // P-EDCA: the Stage-2 winner must protect the channel with RTS/CTS before sending its
-+    // FIRST data frame, regardless of what WifiRemoteStationManager::NeedRts() would otherwise
-+    // decide (frame size, whether the destination is known to support it, etc.), since
-+    // neighbouring legacy STAs have deferred on the DS-CTS's NAV rather than on an RTS/CTS
-+    // exchange for this data frame specifically. Any further frames sent within the same
-+    // Stage-2-won TXOP are already covered by the NAV that first frame's own Duration field
-+    // set -- exactly like ordinary EDCA TXOP continuation frames for any other AC -- so
-+    // ConsumePedcaStage2InitialFrame() only returns true once per Stage-2 win, not for every
-+    // frame while IsPedcaStage2() happens to still be true.
-+    bool pedcaNeedRts = false;
-+    if (hdr.IsQosData() && QosUtilsMapTidToAc(hdr.GetQosTid()) == AC_VO)
-+    {
-+        auto voTxop = m_mac->GetQosTxop(AC_VO);
-+        pedcaNeedRts = voTxop && voTxop->ConsumePedcaStage2InitialFrame(m_linkId);
-+    }
-
+ 
++    // P-EDCA: a P-EDCA STA that initiates a TXOP during a P-EDCA contention shall transmit an
++    // RTS frame as the initial frame in the TXOP. While in Stage 2, only the AC_VO EDCAF of this
++    // STA can win access (the other ACs are frozen), and it leaves Stage 2 as soon as the
++    // initial exchange concludes, so the following frames of the TXOP are protected as usual.
++    // This applies to any individually addressed frame of the AC_VO queue (QoS Data, but also,
++    // e.g., Management frames).
++    const auto voTxop = m_mac->GetQosTxop(AC_VO);
++    const bool pedcaNeedRts =
++        voTxop && voTxop->IsPedcaStage2(m_linkId) && !hdr.GetAddr1().IsGroup();
++
      // check if RTS/CTS is needed
-     if (emlsrNeedRts || pedcaNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
+-    if (emlsrNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
++    if (emlsrNeedRts || pedcaNeedRts || GetWifiRemoteStationManager()->NeedRts(hdr, txParams))
      {
+         auto protection = std::make_unique<WifiRtsCtsProtection>();
+         protection->rtsTxVector =
+diff --git a/src/wifi/model/wifi-mac.cc b/src/wifi/model/wifi-mac.cc
+index 87c138d98..dbfaf3335 100644
+--- a/src/wifi/model/wifi-mac.cc
++++ b/src/wifi/model/wifi-mac.cc
+@@ -79,6 +79,14 @@ WifiMac::GetTypeId()
+                           BooleanValue(false),
+                           MakeBooleanAccessor(&WifiMac::SetQosSupported, &WifiMac::GetQosSupported),
+                           MakeBooleanChecker())
++            .AddAttribute(
++                "PEdcaSupported",
++                "This Boolean attribute is set to enable P-EDCA (IEEE 802.11bn) "
++                "support at this STA. Requires QosSupported.",
++                TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT, // prevent setting after construction
++                BooleanValue(false),
++                MakeBooleanAccessor(&WifiMac::SetPEdcaSupported, &WifiMac::GetPEdcaSupported),
++                MakeBooleanChecker())
+             .AddAttribute("CtsToSelfSupported",
+                           "Use CTS to Self when using a rate that is not in the basic rate set.",
+                           BooleanValue(false),
+@@ -1431,6 +1439,20 @@ WifiMac::GetQosSupported() const
+     return m_qosSupported;
+ }
+ 
++void
++WifiMac::SetPEdcaSupported(bool enable)
++{
++    NS_LOG_FUNCTION(this << enable);
++    NS_ABORT_IF(IsInitialized());
++    m_pedcaSupported = enable;
++}
++
++bool
++WifiMac::GetPEdcaSupported() const
++{
++    return m_pedcaSupported && m_qosSupported;
++}
++
+ bool
+ WifiMac::GetErpSupported(uint8_t linkId) const
+ {
+diff --git a/src/wifi/model/wifi-mac.h b/src/wifi/model/wifi-mac.h
+index d97e78872..e3c4de513 100644
+--- a/src/wifi/model/wifi-mac.h
++++ b/src/wifi/model/wifi-mac.h
+@@ -619,6 +619,10 @@ class WifiMac : public Object
+      * @return true if QoS is supported, false otherwise
+      */
+     bool GetQosSupported() const;
++    /**
++     * @return true if P-EDCA (IEEE 802.11bn) is enabled at this STA (requires QoS support)
++     */
++    bool GetPEdcaSupported() const;
+     /**
+      * Return whether the device supports ERP on the given link.
+      *
+@@ -1074,6 +1078,11 @@ class WifiMac : public Object
+      * @param enable whether QoS is supported
+      */
+     void SetQosSupported(bool enable);
++    /**
++     * Enable or disable P-EDCA support (only before initialization).
++     * @param enable whether P-EDCA is supported
++     */
++    void SetPEdcaSupported(bool enable);
+ 
+     /**
+      * Set the Txop object.
+@@ -1270,6 +1279,7 @@ class WifiMac : public Object
+      * however.
+      */
+     bool m_qosSupported;
++    bool m_pedcaSupported{false}; ///< flag whether P-EDCA (802.11bn) is supported
+ 
+     bool m_shortSlotTimeSupported; ///< flag whether short slot time is supported
+     bool m_ctsToSelfSupported;     ///< flag indicating whether CTS-To-Self is supported
+diff --git a/src/wifi/model/wifi-phy.cc b/src/wifi/model/wifi-phy.cc
+index a2669360f..c4fcedf9b 100644
+--- a/src/wifi/model/wifi-phy.cc
++++ b/src/wifi/model/wifi-phy.cc
+@@ -286,6 +286,15 @@ WifiPhy::GetTypeId()
+                           DoubleValue(100.0), // set to a high value so as to have no effect
+                           MakeDoubleAccessor(&WifiPhy::m_powerDensityLimit),
+                           MakeDoubleChecker<dBm_per_MHz_u>())
++            .AddAttribute("MaxDelaySameContentPpdu",
++                          "Maximum delay between the arrival of PPDUs that several stations "
++                          "transmit simultaneously with identical content (e.g., P-EDCA DS-CTS "
++                          "frames) for them to add up constructively at the receiver. Such "
++                          "PPDUs arriving later are treated as interference. The default is "
++                          "the non-HT guard interval (cyclic prefix).",
++                          TimeValue(NanoSeconds(800)),
++                          MakeTimeAccessor(&WifiPhy::m_maxDelaySameContentPpdu),
++                          MakeTimeChecker(Time{0}))
+             .AddAttribute("NotifyMacHdrRxEnd",
+                           "Whether the PHY is capable of notifying the MAC about the end of "
+                           "the reception of the MAC header of every MPDU.",
+@@ -1953,6 +1962,37 @@ WifiPhy::GetPreviouslyRxPpduUid() const
+     return m_previouslyRxPpduUid;
+ }
+ 
++uint64_t
++WifiPhy::GetSameContentPpduUid()
++{
++    // Stations transmitting simultaneously start at the same slot boundary, up to propagation
++    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart, hence a 50 us bucket
++    // gives the same UID to simultaneous transmissions and distinct UIDs to successive ones.
++    return SAME_CONTENT_PPDU_UID_FLAG |
++           static_cast<uint64_t>(Simulator::Now().GetNanoSeconds() / 50'000);
++}
++
++void
++WifiPhy::SetNextTxPpduUid(uint64_t uid)
++{
++    NS_LOG_FUNCTION(this << uid);
++    m_nextTxPpduUid = uid;
++}
++
++std::optional<uint64_t>
++WifiPhy::TakeNextTxPpduUid()
++{
++    auto uid = m_nextTxPpduUid;
++    m_nextTxPpduUid.reset();
++    return uid;
++}
++
++Time
++WifiPhy::GetMaxDelaySameContentPpdu() const
++{
++    return m_maxDelaySameContentPpdu;
++}
++
+ void
+ WifiPhy::SetPreviouslyRxPpduUid(uint64_t uid)
+ {
+diff --git a/src/wifi/model/wifi-phy.h b/src/wifi/model/wifi-phy.h
+index 83b264d77..d14871f3f 100644
+--- a/src/wifi/model/wifi-phy.h
++++ b/src/wifi/model/wifi-phy.h
+@@ -28,6 +28,7 @@
+ #include "ns3/wifi-export.h"
+ 
+ #include <limits>
++#include <optional>
+ 
+ #define WIFI_PHY_NS_LOG_APPEND_CONTEXT(phy)                                                        \
+     {                                                                                              \
+@@ -1274,6 +1275,45 @@ class WIFI_EXPORT WifiPhy : public Object
+      */
+     void SetPreviouslyRxPpduUid(uint64_t uid);
+ 
++    /**
++     * Flag set in the UID of PPDUs that are transmitted with identical content by several
++     * stations at the same time (e.g., the P-EDCA DS-CTS, which has no TA field and a fixed
++     * scrambler seed). A receiver combines such PPDUs as a single signal (their powers add up)
++     * instead of treating them as mutual interference, provided that they arrive within
++     * MaxDelaySameContentPpdu of each other.
++     */
++    static constexpr uint64_t SAME_CONTENT_PPDU_UID_FLAG = uint64_t{1} << 63;
++
++    /**
++     * Get a UID for a PPDU whose content is identical to that of PPDUs that other stations may
++     * transmit at the same time (see SAME_CONTENT_PPDU_UID_FLAG). All stations calling this
++     * method within the same 50 us interval obtain the same UID.
++     *
++     * @return the UID to use for the PPDU
++     */
++    static uint64_t GetSameContentPpduUid();
++
++    /**
++     * Use the given UID for the next PPDU transmitted by this PHY, instead of a newly
++     * generated one. The setting is consumed by the next transmission.
++     *
++     * @param uid the UID for the next transmitted PPDU
++     */
++    void SetNextTxPpduUid(uint64_t uid);
++
++    /**
++     * Return and clear the UID set by SetNextTxPpduUid(), if any.
++     *
++     * @return the UID to use for the PPDU being built, if one was set
++     */
++    std::optional<uint64_t> TakeNextTxPpduUid();
++
++    /**
++     * @return the maximum delay between the arrival of PPDUs with identical content (see
++     *         SAME_CONTENT_PPDU_UID_FLAG) for them to be combined
++     */
++    Time GetMaxDelaySameContentPpdu() const;
++
+     /**
+      * @param currentChannelWidth channel width of the current transmission
+      * @return the width of the guard band
+@@ -1407,6 +1447,8 @@ class WIFI_EXPORT WifiPhy : public Object
+         m_currentPreambleEvents; //!< store event associated to a PPDU (that has a unique ID and
+                                  //!< preamble combination) whose preamble is being received
+ 
++    std::optional<uint64_t> m_nextTxPpduUid; //!< UID to use for the next transmitted PPDU, if set
++    Time m_maxDelaySameContentPpdu; //!< max arrival delay to combine PPDUs with identical content
+     uint64_t m_previouslyRxPpduUid; //!< UID of the previously received PPDU, reset to UINT64_MAX
+                                     //!< upon transmission
 
-Notes / things to verify before you rely on this for results
---------------------------------------------------------------
-1. Line numbers/context above are anchored to the hunks I was shown from
-   pedca_patch.patch, not a full compile of your tree -- match by the
-   quoted surrounding lines/comments rather than assuming exact line
-   numbers, and expect to nudge the hunks by hand if `patch`/`git apply`
-   complains about offset.
-2. This assumes QosTxop::GetTxopLimit()/GetRemainingTxop() are already
-   available and behave as used by the unmodified continuation check right
-   below the edit in TransmissionSucceeded() -- they are, since that block
-   is pre-existing, unmodified ns-3 code.
-3. Worth adding a companion CSV column / trace (e.g. counting frames sent
-   per Stage-2 win) if you want to directly verify in results that TXOPs
-   are now carrying more than one frame -- happy to add that if useful.
-4. Re-derive whether PEdcaStage2Window (97 us in your sweep) is still an
-   appropriate value once Stage-2 wins can now cover multi-frame TXOPs --
-   the window governs how long OTHER eligible STAs can still join Stage 2
-   to compete for the *next* win, not the winner's own TXOP duration, so
-   it likely does not need to change for this fix alone, but worth
-   confirming against your target draft's intent.

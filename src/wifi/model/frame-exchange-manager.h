@@ -371,6 +371,23 @@ class FrameExchangeManager : public Object
     virtual void ProtectionCompleted();
 
     /**
+     * Called right before the NAV is updated based on a received MAC header, i.e., at the end
+     * of the reception of a PSDU and, if the PHY notifies the end of the reception of MAC
+     * headers, also when the MAC header of a PSDU being received has been decoded. Subclasses
+     * may intercept special frames here (e.g., the P-EDCA DS-CTS, which an eligible P-EDCA STA
+     * must not set its NAV from).
+     *
+     * @param hdr the received MAC header
+     * @param txVector TxVector of the PSDU containing the MAC header
+     * @param psduDuration the remaining duration of the PSDU being received (zero if the
+     *                     reception of the PSDU has been completed)
+     * @return true if the NAV has to be updated based on the given MAC header
+     */
+    virtual bool NeedNavUpdate(const WifiMacHeader& hdr,
+                               const WifiTxVector& txVector,
+                               Time psduDuration);
+
+    /**
      * Update the NAV, if needed, based on the Duration/ID of the given MAC header and the given
      * surplus.
      *

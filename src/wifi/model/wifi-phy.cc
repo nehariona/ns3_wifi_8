@@ -286,6 +286,15 @@ WifiPhy::GetTypeId()
                           DoubleValue(100.0), // set to a high value so as to have no effect
                           MakeDoubleAccessor(&WifiPhy::m_powerDensityLimit),
                           MakeDoubleChecker<dBm_per_MHz_u>())
+            .AddAttribute("MaxDelaySameContentPpdu",
+                          "Maximum delay between the arrival of PPDUs that several stations "
+                          "transmit simultaneously with identical content (e.g., P-EDCA DS-CTS "
+                          "frames) for them to add up constructively at the receiver. Such "
+                          "PPDUs arriving later are treated as interference. The default is "
+                          "the non-HT guard interval (cyclic prefix).",
+                          TimeValue(NanoSeconds(800)),
+                          MakeTimeAccessor(&WifiPhy::m_maxDelaySameContentPpdu),
+                          MakeTimeChecker(Time{0}))
             .AddAttribute("NotifyMacHdrRxEnd",
                           "Whether the PHY is capable of notifying the MAC about the end of "
                           "the reception of the MAC header of every MPDU.",
@@ -1951,6 +1960,37 @@ uint64_t
 WifiPhy::GetPreviouslyRxPpduUid() const
 {
     return m_previouslyRxPpduUid;
+}
+
+uint64_t
+WifiPhy::GetSameContentPpduUid()
+{
+    // Stations transmitting simultaneously start at the same slot boundary, up to propagation
+    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart, hence a 50 us bucket
+    // gives the same UID to simultaneous transmissions and distinct UIDs to successive ones.
+    return SAME_CONTENT_PPDU_UID_FLAG |
+           static_cast<uint64_t>(Simulator::Now().GetNanoSeconds() / 50'000);
+}
+
+void
+WifiPhy::SetNextTxPpduUid(uint64_t uid)
+{
+    NS_LOG_FUNCTION(this << uid);
+    m_nextTxPpduUid = uid;
+}
+
+std::optional<uint64_t>
+WifiPhy::TakeNextTxPpduUid()
+{
+    auto uid = m_nextTxPpduUid;
+    m_nextTxPpduUid.reset();
+    return uid;
+}
+
+Time
+WifiPhy::GetMaxDelaySameContentPpdu() const
+{
+    return m_maxDelaySameContentPpdu;
 }
 
 void

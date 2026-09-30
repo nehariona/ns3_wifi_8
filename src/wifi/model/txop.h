@@ -522,6 +522,14 @@ class Txop : public Object
      * @param linkId the ID of the given link
      */
     void RequestAccess(uint8_t linkId);
+    /**
+     * Called by RequestAccess() right before a new channel access request is passed to the
+     * ChannelAccessManager of the given link. The default implementation does nothing;
+     * QosTxop uses it to switch between normal EDCA and P-EDCA access parameters.
+     *
+     * @param linkId the ID of the given link
+     */
+    virtual void UpdateAccessParamsBeforeRequest(uint8_t linkId);
 
     /**
      * Return the time when the backoff procedure started on the given link.
@@ -562,7 +570,7 @@ class Txop : public Object
         std::size_t staRetryCount{0}; //!< the Station Short Retry Count (SSRC) maintained by
                                       //!< non-QoS stations or the QoS STA Retry Count (QSRC)
                                       //!< maintained by QoS STAs for each AC
-        std::size_t psrc{0}; //!< the P-EDCA Short Retry Count (PSRC)
+        std::size_t psrc{0};          //!< the P-EDCA Short Retry Count (PSRC)
         ChannelAccessStatus access{NOT_REQUESTED}; //!< channel access status
 
         mutable class

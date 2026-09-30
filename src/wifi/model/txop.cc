@@ -362,6 +362,9 @@ Txop::ResetCw(uint8_t linkId)
     link.cw = GetMinCw(linkId);
     m_cwTrace(link.cw, linkId);
     link.staRetryCount = 0;
+    // P-EDCA: QSRC is reset on every successful delivery (Ack, BlockAck, HE/EHT MU responses all
+    // end up here), which is also when PSRC must be reset
+    ResetPsrc(linkId);
 }
 
 void
@@ -790,8 +793,16 @@ Txop::RequestAccess(uint8_t linkId)
     // ChannelAccessManager::RequestAccess().
     if (GetLink(linkId).access == NOT_REQUESTED)
     {
+        // give subclasses a chance to switch access parameters (and regenerate the backoff)
+        // before the ChannelAccessManager aligns the backoff start to a slot boundary
+        UpdateAccessParamsBeforeRequest(linkId);
         m_mac->GetChannelAccessManager(linkId)->RequestAccess(this);
     }
+}
+
+void
+Txop::UpdateAccessParamsBeforeRequest(uint8_t /* linkId */)
+{
 }
 
 void

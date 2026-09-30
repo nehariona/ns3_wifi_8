@@ -620,7 +620,7 @@ class WifiMac : public Object
      */
     bool GetQosSupported() const;
     /**
-     * @return true if P-EDCA (IEEE 802.11bn) is enabled at this STA
+     * @return true if P-EDCA (IEEE 802.11bn) is enabled at this STA (requires QoS support)
      */
     bool GetPEdcaSupported() const;
     /**

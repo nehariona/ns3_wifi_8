@@ -79,15 +79,14 @@ WifiMac::GetTypeId()
                           BooleanValue(false),
                           MakeBooleanAccessor(&WifiMac::SetQosSupported, &WifiMac::GetQosSupported),
                           MakeBooleanChecker())
-            .AddAttribute("PEdcaSupported",
-                          "This Boolean attribute is set to enable P-EDCA (IEEE 802.11bn) "
-                          "support at this STA. Requires QosSupported.",
-                          TypeId::ATTR_GET |
-                              TypeId::ATTR_CONSTRUCT, // prevent setting after construction
-                          BooleanValue(false),
-                          MakeBooleanAccessor(&WifiMac::SetPEdcaSupported,
-                                              &WifiMac::GetPEdcaSupported),
-                          MakeBooleanChecker())
+            .AddAttribute(
+                "PEdcaSupported",
+                "This Boolean attribute is set to enable P-EDCA (IEEE 802.11bn) "
+                "support at this STA. Requires QosSupported.",
+                TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT, // prevent setting after construction
+                BooleanValue(false),
+                MakeBooleanAccessor(&WifiMac::SetPEdcaSupported, &WifiMac::GetPEdcaSupported),
+                MakeBooleanChecker())
             .AddAttribute("CtsToSelfSupported",
                           "Use CTS to Self when using a rate that is not in the basic rate set.",
                           BooleanValue(false),
@@ -1451,7 +1450,7 @@ WifiMac::SetPEdcaSupported(bool enable)
 bool
 WifiMac::GetPEdcaSupported() const
 {
-    return m_pedcaSupported;
+    return m_pedcaSupported && m_qosSupported;
 }
 
 bool
