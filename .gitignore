@@ -2,6 +2,7 @@ build/
 results/
 *.pcap
 *.tr
+*.log
 
 # === ns-3 Build and Configuration Directories ===
 build/

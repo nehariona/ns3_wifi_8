@@ -194,7 +194,10 @@ class MacRetryCounter
 
     uint64_t GetAttemptsForNode(uint32_t nodeId) const;
 
+    uint64_t GetRtsForNode(uint32_t nodeId) const;
+
   private:
+    std::map<uint32_t, uint64_t> m_rtsPerNode;
     std::map<uint32_t, uint64_t> m_retriesPerNode;
     std::map<uint32_t, uint64_t> m_attemptsPerNode;
 };
@@ -208,6 +211,7 @@ MacRetryCounter::Connect(NodeContainer staNodes)
 
         m_retriesPerNode[nodeId] = 0;
         m_attemptsPerNode[nodeId] = 0;
+        m_rtsPerNode[nodeId] = 0;
     }
 
     Config::Connect(
@@ -231,7 +235,7 @@ MacRetryCounter::Trace(std::string context,
         return;
     }
 
-    if (!hdr.IsData())
+    if (!hdr.IsData() && !hdr.IsRts())
     {
         return;
     }
@@ -274,6 +278,14 @@ MacRetryCounter::Trace(std::string context,
         return;
     }
 
+    if (hdr.IsRts())
+    {
+        // RTS threshold is left at its default, so RTS frames from STAs are sent only as the
+        // initial frame of a TXOP obtained in the P-EDCA contention (Stage 2)
+        ++m_rtsPerNode[nodeId];
+        return;
+    }
+
     ++attemptIt->second;
 
     if (hdr.IsRetry())
@@ -288,6 +300,14 @@ MacRetryCounter::GetRetriesForNode(uint32_t nodeId) const
     auto it = m_retriesPerNode.find(nodeId);
 
     return (it == m_retriesPerNode.end()) ? 0 : it->second;
+}
+
+uint64_t
+MacRetryCounter::GetRtsForNode(uint32_t nodeId) const
+{
+    auto it = m_rtsPerNode.find(nodeId);
+
+    return (it == m_rtsPerNode.end()) ? 0 : it->second;
 }
 
 uint64_t
@@ -436,12 +456,25 @@ main(int argc, char* argv[])
      */
     uint32_t pedcaQsrcThreshold = 1;
     uint32_t pedcaPsrcThreshold = 1;
-    uint32_t pedcaDsAifsn = 1;
+    uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
     uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
-    uint32_t pedcaStage2Aifsn = 1;
+    uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
     uint32_t pedcaStage2CwMin = 3;
     uint32_t pedcaStage2CwMax = 7;
-    double pedcaStage2WindowUs = 97.0;
+    // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
+    // defaults), so the window stays consistent if you sweep AIFSN/CWmax
+    double pedcaStage2WindowUs = 0.0;
+
+    // AP P-EDCA support. Must be true for the AP to answer a Stage-2 RTS that arrives while its
+    // NAV (set by the DS-CTS) is still running (QosFrameExchangeManager::CanRespondToRtsDuringPedca)
+    bool apPedcaSupported = true;
+
+    // Max arrival offset for simultaneous identical DS-CTS frames to add up at a receiver
+    // (WifiPhy::MaxDelaySameContentPpdu); 0 disables combining
+    double sameContentMaxDelayNs = 800.0;
+
+    // FlowMonitor delay-histogram bin width, used for the delay percentiles
+    double delayBinWidthUs = 100.0;
 
     /*
      * Per-AC offered load in Mbit/s. Held FIXED per AC by default
@@ -502,8 +535,20 @@ main(int argc, char* argv[])
     cmd.AddValue("pedcaStage2CwMin", "P-EDCA: minimum CW inside Stage 2", pedcaStage2CwMin);
     cmd.AddValue("pedcaStage2CwMax", "P-EDCA: maximum CW inside Stage 2", pedcaStage2CwMax);
     cmd.AddValue("pedcaStage2WindowUs",
-                 "P-EDCA: Stage-2 window / DS-CTS Duration, in microseconds",
+                 "P-EDCA: Stage-2 window / DS-CTS Duration, in microseconds (0 = computed "
+                 "from Stage-2 AIFSN and CWmax)",
                  pedcaStage2WindowUs);
+    cmd.AddValue("apPedcaSupported",
+                 "Enable P-EDCA on the AP (needed for it to answer Stage-2 RTS during the "
+                 "DS-CTS NAV)",
+                 apPedcaSupported);
+    cmd.AddValue("sameContentMaxDelayNs",
+                 "Max arrival offset (ns) for simultaneous DS-CTS frames to combine at a "
+                 "receiver; 0 treats them as colliding",
+                 sameContentMaxDelayNs);
+    cmd.AddValue("delayBinWidthUs",
+                 "FlowMonitor delay histogram bin width (us), resolution of the percentiles",
+                 delayBinWidthUs);
 
     cmd.AddValue("payloadSize", "UDP payload size in bytes", payloadSize);
 
@@ -575,9 +620,14 @@ main(int argc, char* argv[])
                         "against the draft before overriding this check");
     }
 
-    if (pedcaStage2WindowUs <= 0.0)
+    if (pedcaStage2WindowUs < 0.0)
     {
-        NS_FATAL_ERROR("pedcaStage2WindowUs must be > 0");
+        NS_FATAL_ERROR("pedcaStage2WindowUs must be >= 0 (0 = computed)");
+    }
+
+    if (sameContentMaxDelayNs < 0.0 || delayBinWidthUs <= 0.0)
+    {
+        NS_FATAL_ERROR("sameContentMaxDelayNs must be >= 0 and delayBinWidthUs > 0");
     }
 
     if (payloadSize == 0)
@@ -663,6 +713,9 @@ main(int argc, char* argv[])
 
     phy.SetChannel(channel.Create());
 
+    phy.Set("MaxDelaySameContentPpdu",
+            TimeValue(NanoSeconds(static_cast<int64_t>(std::llround(sameContentMaxDelayNs)))));
+
     phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
 
     // Channel 36: 5 GHz, 20 MHz
@@ -738,15 +791,18 @@ main(int argc, char* argv[])
                     "Per-group slice offsets did not add up to numStations; "
                     "check stationsPerAc/kAcGroups ordering");
 
-    // AP MAC. PEdcaSupported left at its default (false): this scenario is
-    // uplink-only, so the AP never itself contends as a P-EDCA STA; it still
-    // correctly runs the receive-side DS-CTS/NAV logic for any P-EDCA STA
-    // that overhears it, since that logic lives in QosFrameExchangeManager
-    // and applies regardless of PEdcaSupported on the receiving MAC.
+    // AP MAC. PEdcaSupported must be true: the AP sets its NAV from the DS-CTS (it is not an
+    // eligible contender in this uplink-only scenario), and only a P-EDCA-capable AP answers an
+    // RTS sent in the P-EDCA contention while that NAV is still running. With it false, every
+    // Stage-2 RTS that ends before the 97 us window expires goes unanswered.
+    // Note: the AP can itself become eligible if frames in its AC_VO queue (e.g. management
+    // frames) are retried; it then joins the P-EDCA contention like any P-EDCA STA.
     mac.SetType(
         "ns3::ApWifiMac",
         "QosSupported",
         BooleanValue(true),
+        "PEdcaSupported",
+        BooleanValue(apPedcaSupported),
         "Ssid",
         SsidValue(ssid),
         "EnableBeaconJitter",
@@ -915,7 +971,12 @@ main(int argc, char* argv[])
     std::cout << "  Stage-2 AIFSN:      " << pedcaStage2Aifsn << "\n";
     std::cout << "  Stage-2 CWmin/max:  " << pedcaStage2CwMin << " / " << pedcaStage2CwMax
               << "\n";
-    std::cout << "  Stage-2 window:     " << pedcaStage2WindowUs << " us\n";
+    std::cout << "  Stage-2 window:     "
+              << (pedcaStage2WindowUs > 0.0 ? std::to_string(pedcaStage2WindowUs) + " us"
+                                            : std::string("computed (97 us with defaults)"))
+              << "\n";
+    std::cout << "  AP P-EDCA:          " << (apPedcaSupported ? "yes" : "no") << "\n";
+    std::cout << "  DS-CTS combining:   " << sameContentMaxDelayNs << " ns\n";
 
     std::cout << "\nAC assignment (stations / per-station Mbps / total AC Mbps):\n";
 
@@ -997,6 +1058,9 @@ main(int argc, char* argv[])
 
     monitor->SetAttribute("StartTime", TimeValue(Seconds(0.0)));
     monitor->SetAttribute("MaxPerHopDelay", TimeValue(Seconds(drainTime)));
+    // P-EDCA targets the tail of the access delay, so keep a fine-grained delay histogram to
+    // report percentiles (must be set before the first flow is created)
+    monitor->SetAttribute("DelayBinWidth", DoubleValue(delayBinWidthUs * 1e-6));
 
     // ======================================================================
     // MAC retry counter
@@ -1042,6 +1106,7 @@ main(int argc, char* argv[])
         uint64_t jitterSamples = 0;
         double delaySum = 0.0;
         double jitterSum = 0.0;
+        std::map<double, uint64_t> delayBins; // bin upper edge (s) -> count, merged over flows
     };
 
     std::array<GroupAggregate, 5> perGroup{};
@@ -1082,6 +1147,14 @@ main(int argc, char* argv[])
         {
             agg.jitterSamples += static_cast<uint64_t>(s.rxPackets - 1);
         }
+
+        for (uint32_t b = 0; b < s.delayHistogram.GetNBins(); ++b)
+        {
+            if (const auto count = s.delayHistogram.GetBinCount(b); count > 0)
+            {
+                agg.delayBins[s.delayHistogram.GetBinEnd(b)] += count;
+            }
+        }
     }
 
     // ======================================================================
@@ -1091,6 +1164,7 @@ main(int argc, char* argv[])
     std::array<uint64_t, 5> macAttemptsPerGroup{};
     std::array<uint64_t, 5> macRetriesPerGroup{};
     std::array<uint64_t, 5> dsCtsPerGroup{}; // nonzero only for group 4, AC_VO_PEDCA
+    std::array<uint64_t, 5> rtsPerGroup{};   // Stage-2 RTS, nonzero only for group 4
 
     for (uint32_t i = 0; i < numStations; ++i)
     {
@@ -1101,6 +1175,7 @@ main(int argc, char* argv[])
         macAttemptsPerGroup[group] += retryCounter.GetAttemptsForNode(nodeId);
         macRetriesPerGroup[group] += retryCounter.GetRetriesForNode(nodeId);
         dsCtsPerGroup[group] += dsCtsCounter.GetDsCtsForNode(nodeId);
+        rtsPerGroup[group] += retryCounter.GetRtsForNode(nodeId);
     }
 
     // ======================================================================
@@ -1178,6 +1253,9 @@ main(int argc, char* argv[])
             << "packetLossRate,"
             << "meanDelayMs,"
             << "meanJitterMs,"
+            << "p95DelayMs,"
+            << "p99DelayMs,"
+            << "p999DelayMs,"
             << "jitterSamples,"
             << "txPackets,"
             << "rxPackets,"
@@ -1187,6 +1265,9 @@ main(int argc, char* argv[])
             << "macDataAttempts,"
             << "macRetransmissions,"
             << "dsCtsTransmissions,"
+            << "stage2RtsTransmissions,"
+            << "apPedcaSupported,"
+            << "sameContentMaxDelayNs,"
             << "pcapEnabled\n";
     }
 
@@ -1222,6 +1303,34 @@ main(int argc, char* argv[])
                 ? (agg.jitterSum / static_cast<double>(agg.jitterSamples)) * 1000.0
                 : std::numeric_limits<double>::quiet_NaN();
 
+        // Delay percentile = upper edge of the histogram bin containing it (resolution
+        // delayBinWidthUs)
+        auto delayPercentileMs = [&agg](double q) {
+            uint64_t total = 0;
+            for (const auto& [edge, count] : agg.delayBins)
+            {
+                total += count;
+            }
+            if (total == 0)
+            {
+                return std::numeric_limits<double>::quiet_NaN();
+            }
+            const auto target = static_cast<uint64_t>(std::ceil(q * static_cast<double>(total)));
+            uint64_t cumulative = 0;
+            for (const auto& [edge, count] : agg.delayBins)
+            {
+                cumulative += count;
+                if (cumulative >= target)
+                {
+                    return edge * 1000.0;
+                }
+            }
+            return agg.delayBins.rbegin()->first * 1000.0;
+        };
+        const double p95DelayMs = delayPercentileMs(0.95);
+        const double p99DelayMs = delayPercentileMs(0.99);
+        const double p999DelayMs = delayPercentileMs(0.999);
+
         const uint64_t macAttempts = macAttemptsPerGroup[g];
         const uint64_t macRetries = macRetriesPerGroup[g];
         const uint64_t dsCtsCount = dsCtsPerGroup[g];
@@ -1239,7 +1348,10 @@ main(int argc, char* argv[])
         std::cout << "  Mean jitter:          " << meanJitterMs << " ms\n";
         std::cout << "  MAC data attempts:    " << macAttempts << "\n";
         std::cout << "  MAC retransmissions:  " << macRetries << "\n";
+        std::cout << "  Delay p95/p99/p99.9:  " << p95DelayMs << " / " << p99DelayMs << " / "
+                  << p999DelayMs << " ms\n";
         std::cout << "  DS-CTS transmissions: " << dsCtsCount << "\n";
+        std::cout << "  Stage-2 RTS:          " << rtsPerGroup[g] << "\n";
 
         if (agg.rxPackets > agg.txPackets)
         {
@@ -1260,7 +1372,7 @@ main(int argc, char* argv[])
                                             << dsCtsCount);
         }
 
-        csv << "EDCA," << scenarioLabel << ',' << kAcGroups[g].label << ',' << numStations
+        csv << (nVoPedca > 0 ? "PEDCA," : "EDCA,") << scenarioLabel << ',' << kAcGroups[g].label << ',' << numStations
             << ',' << nBe << ',' << nBk << ',' << nVi << ',' << nVoLegacy << ',' << nVoPedca
             << ',' << pedcaAdoptionRatio << ',' << stationsPerAc[g] << ',' << bssRadius
             << ',' << (perStationLoadFixed ? "perStation" : "perAc") << ','
@@ -1272,9 +1384,12 @@ main(int argc, char* argv[])
             << pedcaStage2CwMax << ',' << pedcaStage2WindowUs << ','
             << throughputMbps << ',' << payloadGoodputMbps << ',' << pdr << ','
             << packetLossRate << ',' << meanDelayMs << ',' << meanJitterMs << ','
+            << p95DelayMs << ',' << p99DelayMs << ',' << p999DelayMs << ','
             << agg.jitterSamples << ',' << agg.txPackets << ',' << agg.rxPackets << ','
             << agg.txBytes << ',' << agg.rxBytes << ',' << agg.lostPackets << ','
             << macAttempts << ',' << macRetries << ',' << dsCtsCount << ','
+            << rtsPerGroup[g] << ',' << (apPedcaSupported ? 1 : 0) << ','
+            << sameContentMaxDelayNs << ','
             << (enablePcap ? 1 : 0) << '\n';
     }
 

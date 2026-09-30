@@ -542,8 +542,8 @@ class QosTxop : public Txop
      */
     void PedcaStage2Timeout(uint8_t linkId);
 
-    uint8_t m_pedcaQsrcThr{1};        //!< P-EDCA QSRC threshold
-    uint8_t m_pedcaPsrcThr{1};        //!< P-EDCA PSRC threshold
+    uint8_t m_pedcaQsrcThr{2};        //!< P-EDCA QSRC threshold
+    uint8_t m_pedcaPsrcThr{5};        //!< P-EDCA PSRC threshold
     uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
     uint32_t m_pedcaCwDs{7};          //!< CWds: DSr is drawn in [0, CWds]
     uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
