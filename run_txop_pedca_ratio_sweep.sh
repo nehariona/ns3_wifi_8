@@ -24,7 +24,7 @@ NUM_RUNS=1
 RNG_SEED=1
 
 # ---- Load: fixed per AC -------------------------------------------------------
-PER_AC_LOAD_MBPS=2
+PER_AC_LOAD_MBPS=10
 
 # ---- Traffic ------------------------------------------------------------------
 TRAFFIC_MODEL="poissonBurst"
@@ -39,7 +39,7 @@ DRAIN_TIME=5
 BSS_RADIUS=5
 
 # ---- P-EDCA parameters (patch v3 defaults; verify against your draft) ---------
-PEDCA_QSRC_THR=2
+PEDCA_QSRC_THR=1
 PEDCA_PSRC_THR=4
 PEDCA_DS_AIFSN=2
 PEDCA_CW_DS=7

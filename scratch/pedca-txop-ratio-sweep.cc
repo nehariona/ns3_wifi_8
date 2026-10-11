@@ -50,6 +50,10 @@
  *     results comparable with CBR runs at the same nominal load. With
  *     --preserveMeanLoad=0 the per-STA load is used as the peak rate
  *     (mean = load x on / (on + off)), as in edca-baseline-validation.cc.
+ *   poisson: Poisson packet arrivals -- every STA sends payloadSize-byte
+ *     packets with exponentially distributed inter-arrival times, mean
+ *     payloadSize x 8 / (per-STA load), so the mean offered load equals
+ *     the per-STA load (PoissonTrafficApp below).
  *   cbr: constant bit rate, always ON (previous behaviour).
  *
  * P-EDCA parameters (QSRC/PSRC thresholds, DS-CTS and Stage-2
@@ -67,6 +71,7 @@
  */
 
 #include "ns3/abort.h"
+#include "ns3/application.h"
 #include "ns3/command-line.h"
 #include "ns3/core-module.h"
 #include "ns3/flow-monitor-helper.h"
@@ -78,7 +83,9 @@
 #include "ns3/position-allocator.h"
 #include "ns3/ssid.h"
 #include "ns3/string.h"
+#include "ns3/socket.h"
 #include "ns3/udp-client-server-helper.h"
+#include "ns3/udp-socket-factory.h"
 #include "ns3/wifi-helper.h"
 #include "ns3/wifi-mac-header.h"
 #include "ns3/wifi-net-device.h"
@@ -180,6 +187,102 @@ GroupForStation(uint32_t staIndex,
     }
 
     return 4; // AC_VO_PEDCA
+}
+
+/*
+ * --------------------------------------------------------------------------
+ * Poisson traffic source
+ * --------------------------------------------------------------------------
+ *
+ * UDP source whose packet arrivals form a Poisson process: fixed-size
+ * packets separated by exponential gaps of mean packetSize x 8 / rate.
+ * The first packet is also sent after an exponential gap, so STAs starting
+ * at the same time are not synchronised. The IP ToS is set on the socket,
+ * as OnOffApplication does, so the AC mapping is unchanged.
+ */
+
+class PoissonTrafficApp : public Application
+{
+  public:
+    static TypeId GetTypeId();
+
+    PoissonTrafficApp();
+
+    void Setup(Address peer, uint32_t packetSize, double rateBps, uint8_t tos);
+
+  private:
+    void StartApplication() override;
+    void StopApplication() override;
+    void ScheduleNext();
+    void SendPacket();
+
+    Ptr<Socket> m_socket;
+    Address m_peer;
+    uint32_t m_packetSize{0};
+    uint8_t m_tos{0};
+    Ptr<ExponentialRandomVariable> m_interArrival;
+    EventId m_sendEvent;
+};
+
+TypeId
+PoissonTrafficApp::GetTypeId()
+{
+    static TypeId tid = TypeId("PoissonTrafficApp")
+                            .SetParent<Application>()
+                            .SetGroupName("Applications")
+                            .AddConstructor<PoissonTrafficApp>();
+    return tid;
+}
+
+PoissonTrafficApp::PoissonTrafficApp()
+    : m_interArrival(CreateObject<ExponentialRandomVariable>())
+{
+}
+
+void
+PoissonTrafficApp::Setup(Address peer, uint32_t packetSize, double rateBps, uint8_t tos)
+{
+    NS_ABORT_MSG_IF(rateBps <= 0.0, "Poisson source needs a positive rate");
+    m_peer = peer;
+    m_packetSize = packetSize;
+    m_tos = tos;
+    m_interArrival->SetAttribute("Mean",
+                                 DoubleValue(static_cast<double>(packetSize) * 8.0 / rateBps));
+}
+
+void
+PoissonTrafficApp::StartApplication()
+{
+    m_socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
+    m_socket->SetIpTos(m_tos);
+    m_socket->Bind();
+    m_socket->Connect(m_peer);
+    ScheduleNext();
+}
+
+void
+PoissonTrafficApp::StopApplication()
+{
+    m_sendEvent.Cancel();
+    if (m_socket)
+    {
+        m_socket->Close();
+    }
+}
+
+void
+PoissonTrafficApp::ScheduleNext()
+{
+    m_sendEvent = Simulator::Schedule(Seconds(m_interArrival->GetValue()),
+                                      &PoissonTrafficApp::SendPacket,
+                                      this);
+}
+
+void
+PoissonTrafficApp::SendPacket()
+{
+    m_socket->Send(Create<Packet>(m_packetSize));
+    ScheduleNext();
 }
 
 /*
@@ -510,7 +613,7 @@ main(int argc, char* argv[])
     /*
      * Traffic model: "poissonBurst" (Poisson burst arrivals, see header) or "cbr".
      */
-    std::string trafficModel = "poissonBurst";
+    std::string trafficModel = "poissonBurst"; // poissonBurst | poisson | cbr
 
     double burstOnTime = 1.0;  // ON (burst) duration in seconds
     double burstOffMean = 2.0; // mean exponential OFF duration in seconds
@@ -596,7 +699,8 @@ main(int argc, char* argv[])
         perStationLoadMbpsFixed);
 
     cmd.AddValue("trafficModel",
-                 "Traffic model: poissonBurst (exponential OFF, fixed ON) or cbr",
+                 "Traffic model: poissonBurst (exponential OFF, fixed ON), poisson "
+                 "(exponential packet inter-arrivals) or cbr",
                  trafficModel);
     cmd.AddValue("burstOnTime", "poissonBurst: ON (burst) duration in seconds", burstOnTime);
     cmd.AddValue("burstOffMean",
@@ -684,9 +788,11 @@ main(int argc, char* argv[])
 
     const bool poissonBurst = (trafficModel == "poissonBurst");
 
-    if (!poissonBurst && trafficModel != "cbr")
+    const bool poissonPackets = (trafficModel == "poisson");
+
+    if (!poissonBurst && !poissonPackets && trafficModel != "cbr")
     {
-        NS_FATAL_ERROR("trafficModel must be poissonBurst or cbr");
+        NS_FATAL_ERROR("trafficModel must be poissonBurst, poisson or cbr");
     }
 
     if (poissonBurst && (burstOnTime <= 0.0 || burstOffMean <= 0.0))
@@ -1082,6 +1188,20 @@ main(int argc, char* argv[])
     for (uint32_t i = 0; i < numStations; ++i)
     {
         const int group = GroupForStation(i, nBe, nBk, nVi, nVoLegacy, nVoPedca);
+
+        if (poissonPackets)
+        {
+            // Poisson packet arrivals at the nominal per-STA mean rate
+            auto app = CreateObject<PoissonTrafficApp>();
+            app->Setup(dest,
+                       payloadSize,
+                       perStationLoadMbps[group] * 1'000'000.0,
+                       kAcGroups[group].tos);
+            staNodes.Get(i)->AddApplication(app);
+            app->SetStartTime(Seconds(trafficStart));
+            app->SetStopTime(Seconds(trafficStop));
+            continue;
+        }
 
         // Rate while ON: the nominal per-STA load, scaled up for poissonBurst when the mean
         // load is preserved
