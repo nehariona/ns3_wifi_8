@@ -7,7 +7,7 @@ if(CMAKE_VERSION VERSION_LESS "2.8.12")
    message(FATAL_ERROR "CMake >= 2.8.12 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 2.8.12...4.0)
+cmake_policy(VERSION 2.8.12...4.2)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS ns3::visualizer ns3::antenna ns3::aodv ns3::applications ns3::bridge ns3::buildings ns3::config-store ns3::core ns3::csma ns3::csma-layout ns3::dsdv ns3::dsr ns3::energy ns3::raw-sock-creator ns3::tap-device-creator ns3::fd-net-device ns3::flow-monitor ns3::internet ns3::internet-apps ns3::lr-wpan ns3::lte ns3::mesh ns3::mobility ns3::netanim ns3::network ns3::nix-vector-routing ns3::olsr ns3::point-to-point ns3::point-to-point-layout ns3::propagation ns3::sixlowpan ns3::spectrum ns3::stats ns3::tap-bridge ns3::tap-creator ns3::topology-read ns3::traffic-control ns3::uan ns3::virtual-net-device ns3::wifi ns3::zigbee)
+foreach(_cmake_expected_target IN ITEMS ns3::antenna ns3::aodv ns3::applications ns3::bridge ns3::buildings ns3::config-store ns3::core ns3::csma ns3::csma-layout ns3::dsdv ns3::dsr ns3::energy ns3::flow-monitor ns3::internet ns3::internet-apps ns3::lr-wpan ns3::lte ns3::mesh ns3::mobility ns3::netanim ns3::network ns3::nix-vector-routing ns3::olsr ns3::point-to-point ns3::point-to-point-layout ns3::propagation ns3::sixlowpan ns3::spectrum ns3::stats ns3::topology-read ns3::traffic-control ns3::uan ns3::virtual-net-device ns3::wifi ns3::zigbee)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -55,355 +55,318 @@ if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
 
-# Create imported target ns3::visualizer
-add_library(ns3::visualizer SHARED IMPORTED)
-
-set_target_properties(ns3::visualizer PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;ns3::wifi;ns3::lr-wpan;ns3::point-to-point;/usr/lib/x86_64-linux-gnu/libpython3.14.so;-lstdc++exp;-Wl,--as-needed"
-)
-
 # Create imported target ns3::antenna
 add_library(ns3::antenna SHARED IMPORTED)
 
 set_target_properties(ns3::antenna PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::core;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::core"
 )
 
 # Create imported target ns3::aodv
 add_library(ns3::aodv SHARED IMPORTED)
 
 set_target_properties(ns3::aodv PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::applications;ns3::internet-apps;ns3::wifi;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::applications;ns3::internet-apps;ns3::wifi"
 )
 
 # Create imported target ns3::applications
 add_library(ns3::applications SHARED IMPORTED)
 
 set_target_properties(ns3::applications PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::bridge
 add_library(ns3::bridge SHARED IMPORTED)
 
 set_target_properties(ns3::bridge PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::buildings
 add_library(ns3::buildings SHARED IMPORTED)
 
 set_target_properties(ns3::buildings PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::propagation;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::propagation"
 )
 
 # Create imported target ns3::config-store
 add_library(ns3::config-store SHARED IMPORTED)
 
 set_target_properties(ns3::config-store PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::core;/usr/lib/x86_64-linux-gnu/libxml2.so;/usr/lib/x86_64-linux-gnu/libfreetype.so;/usr/lib/x86_64-linux-gnu/libglib-2.0.so;/usr/lib/x86_64-linux-gnu/libgthread-2.0.so;/usr/lib/x86_64-linux-gnu/libgobject-2.0.so;/usr/lib/x86_64-linux-gnu/libgio-2.0.so;/usr/lib/x86_64-linux-gnu/libgdk_pixbuf-2.0.so;/usr/lib/x86_64-linux-gnu/libgdk-3.so;/usr/lib/x86_64-linux-gnu/libgtk-3.so;/usr/lib/x86_64-linux-gnu/libcairo.so;/usr/lib/x86_64-linux-gnu/libpango-1.0.so;/usr/lib/x86_64-linux-gnu/libatk-1.0.so;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::core;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd"
 )
 
 # Create imported target ns3::core
 add_library(ns3::core SHARED IMPORTED)
 
 set_target_properties(ns3::core PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE;HAVE_BOOST;HAVE_BOOST_UNITS"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
 )
 
 # Create imported target ns3::csma
 add_library(ns3::csma SHARED IMPORTED)
 
 set_target_properties(ns3::csma PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::csma-layout
 add_library(ns3::csma-layout SHARED IMPORTED)
 
 set_target_properties(ns3::csma-layout PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;ns3::csma;ns3::point-to-point;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet;ns3::csma;ns3::point-to-point"
 )
 
 # Create imported target ns3::dsdv
 add_library(ns3::dsdv SHARED IMPORTED)
 
 set_target_properties(ns3::dsdv PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::mesh;ns3::internet-apps;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::mesh;ns3::internet-apps"
 )
 
 # Create imported target ns3::dsr
 add_library(ns3::dsr SHARED IMPORTED)
 
 set_target_properties(ns3::dsr PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::mesh;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::mesh"
 )
 
 # Create imported target ns3::energy
 add_library(ns3::energy SHARED IMPORTED)
 
 set_target_properties(ns3::energy PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
-)
-
-# Create imported target ns3::raw-sock-creator
-add_executable(ns3::raw-sock-creator IMPORTED)
-
-# Create imported target ns3::tap-device-creator
-add_executable(ns3::tap-device-creator IMPORTED)
-
-# Create imported target ns3::fd-net-device
-add_library(ns3::fd-net-device SHARED IMPORTED)
-
-set_target_properties(ns3::fd-net-device PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE;HAVE_PACKET_H;RAW_SOCK_CREATOR=\"/home/prthvsr/ns3_wifi_8/build/src/fd-net-device/ns3.48-raw-sock-creator-default\";TAP_DEV_CREATOR=\"/home/prthvsr/ns3_wifi_8/build/src/fd-net-device/ns3.48-tap-device-creator-default\""
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::flow-monitor
 add_library(ns3::flow-monitor SHARED IMPORTED)
 
 set_target_properties(ns3::flow-monitor PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::internet
 add_library(ns3::internet SHARED IMPORTED)
 
 set_target_properties(ns3::internet PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::bridge;ns3::traffic-control;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::bridge;ns3::traffic-control"
 )
 
 # Create imported target ns3::internet-apps
 add_library(ns3::internet-apps SHARED IMPORTED)
 
 set_target_properties(ns3::internet-apps PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::lr-wpan
 add_library(ns3::lr-wpan SHARED IMPORTED)
 
 set_target_properties(ns3::lr-wpan PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::spectrum;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::spectrum"
 )
 
 # Create imported target ns3::lte
 add_library(ns3::lte SHARED IMPORTED)
 
 set_target_properties(ns3::lte PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::fd-net-device;ns3::spectrum;ns3::buildings;ns3::virtual-net-device;ns3::point-to-point;ns3::applications;ns3::csma;ns3::config-store;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::spectrum;ns3::buildings;ns3::virtual-net-device;ns3::point-to-point;ns3::applications;ns3::csma;ns3::config-store"
 )
 
 # Create imported target ns3::mesh
 add_library(ns3::mesh SHARED IMPORTED)
 
 set_target_properties(ns3::mesh PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::wifi;ns3::applications;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::wifi;ns3::applications"
 )
 
 # Create imported target ns3::mobility
 add_library(ns3::mobility SHARED IMPORTED)
 
 set_target_properties(ns3::mobility PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::antenna;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::antenna;ns3::network"
 )
 
 # Create imported target ns3::netanim
 add_library(ns3::netanim SHARED IMPORTED)
 
 set_target_properties(ns3::netanim PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::wifi;ns3::lte;ns3::uan;ns3::lr-wpan;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::wifi;ns3::lte;ns3::uan;ns3::lr-wpan"
 )
 
 # Create imported target ns3::network
 add_library(ns3::network SHARED IMPORTED)
 
 set_target_properties(ns3::network PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::stats;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::stats"
 )
 
 # Create imported target ns3::nix-vector-routing
 add_library(ns3::nix-vector-routing SHARED IMPORTED)
 
 set_target_properties(ns3::nix-vector-routing PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::olsr
 add_library(ns3::olsr SHARED IMPORTED)
 
 set_target_properties(ns3::olsr PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::point-to-point
 add_library(ns3::point-to-point SHARED IMPORTED)
 
 set_target_properties(ns3::point-to-point PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::point-to-point-layout
 add_library(ns3::point-to-point-layout SHARED IMPORTED)
 
 set_target_properties(ns3::point-to-point-layout PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;ns3::point-to-point;ns3::mobility;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet;ns3::point-to-point;ns3::mobility"
 )
 
 # Create imported target ns3::propagation
 add_library(ns3::propagation SHARED IMPORTED)
 
 set_target_properties(ns3::propagation PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::mobility;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::mobility"
 )
 
 # Create imported target ns3::sixlowpan
 add_library(ns3::sixlowpan SHARED IMPORTED)
 
 set_target_properties(ns3::sixlowpan PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::internet"
 )
 
 # Create imported target ns3::spectrum
 add_library(ns3::spectrum SHARED IMPORTED)
 
 set_target_properties(ns3::spectrum PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::propagation;ns3::antenna;ns3::buildings;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::propagation;ns3::antenna;ns3::buildings"
 )
 
 # Create imported target ns3::stats
 add_library(ns3::stats SHARED IMPORTED)
 
 set_target_properties(ns3::stats PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::core;/usr/lib/x86_64-linux-gnu/libsqlite3.so;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::core;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libsqlite3.tbd"
 )
-
-# Create imported target ns3::tap-bridge
-add_library(ns3::tap-bridge SHARED IMPORTED)
-
-set_target_properties(ns3::tap-bridge PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE;TAP_CREATOR=\"/home/prthvsr/ns3_wifi_8/build/src/tap-bridge/ns3.48-tap-creator-default\""
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::internet;-lstdc++exp;-Wl,--as-needed"
-)
-
-# Create imported target ns3::tap-creator
-add_executable(ns3::tap-creator IMPORTED)
 
 # Create imported target ns3::topology-read
 add_library(ns3::topology-read SHARED IMPORTED)
 
 set_target_properties(ns3::topology-read PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::traffic-control
 add_library(ns3::traffic-control SHARED IMPORTED)
 
 set_target_properties(ns3::traffic-control PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::uan
 add_library(ns3::uan SHARED IMPORTED)
 
 set_target_properties(ns3::uan PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::mobility;ns3::energy;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::mobility;ns3::energy"
 )
 
 # Create imported target ns3::virtual-net-device
 add_library(ns3::virtual-net-device SHARED IMPORTED)
 
 set_target_properties(ns3::virtual-net-device PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::network;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::network"
 )
 
 # Create imported target ns3::wifi
 add_library(ns3::wifi SHARED IMPORTED)
 
 set_target_properties(ns3::wifi PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::energy;ns3::spectrum;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::energy;ns3::spectrum"
 )
 
 # Create imported target ns3::zigbee
 add_library(ns3::zigbee SHARED IMPORTED)
 
 set_target_properties(ns3::zigbee PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/home/prthvsr/ns3_wifi_8\";__LINUX__;NS3_BUILD_PROFILE_DEBUG;STACKTRACE_LIBRARY_IS_LINKED=1;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include;/usr/include/freetype2;/usr/include/glib-2.0;/usr/lib/x86_64-linux-gnu/glib-2.0/include;/usr/include/gdk-pixbuf-2.0;/usr/include/gtk-3.0;/usr/include/cairo;/usr/include/pango-1.0;/usr/include/harfbuzz;/usr/include/atk-1.0;/usr/include/libxml2;/usr/include/python3.14"
-  INTERFACE_LINK_LIBRARIES "-Wl,--no-as-needed;ns3::lr-wpan;-lstdc++exp;-Wl,--as-needed"
+  INTERFACE_COMPILE_DEFINITIONS "PROJECT_SOURCE_PATH=\"/Users/neharionaalice/Downloads/ns-3.48\";__APPLE__;NS3_BUILD_PROFILE_DEBUG;HAVE_SQLITE3;HAVE_LIBXML2;NS3_LOG_ENABLE;NS3_ASSERT_ENABLE"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2"
+  INTERFACE_LINK_LIBRARIES "ns3::lr-wpan"
 )
 
 # Load information for each installed configuration.

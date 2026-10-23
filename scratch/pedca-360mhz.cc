@@ -1547,6 +1547,8 @@ int main(int argc, char* argv[])
             << "p95DelayMs,"
             << "p99DelayMs,"
             << "p999DelayMs,"
+            << "deliveredWithin10msRatio,"
+            << "deliveredWithin20msRatio,"
             << "jitterSamples,"
             << "txPackets,"
             << "rxPackets,"
@@ -1622,6 +1624,25 @@ int main(int argc, char* argv[])
         const double p99DelayMs = delayPercentileMs(0.99);
         const double p999DelayMs = delayPercentileMs(0.999);
 
+        // Fraction of ALL sent packets delivered within a deadline. Lost packets count against
+        // the group, so groups with different loss rates are compared fairly (the percentile
+        // delays above are computed over delivered packets only).
+        auto ratioWithinMs = [&agg](double ms) {
+            uint64_t within = 0;
+            for (const auto& [edge, count] : agg.delayBins)
+            {
+                if (edge * 1000.0 <= ms + 1e-9)
+                {
+                    within += count;
+                }
+            }
+            return agg.txPackets > 0
+                       ? static_cast<double>(within) / static_cast<double>(agg.txPackets)
+                       : 0.0;
+        };
+        const double within10 = ratioWithinMs(10.0);
+        const double within20 = ratioWithinMs(20.0);
+
         const uint64_t macAttempts = macAttemptsPerGroup[g];
         const uint64_t macRetries = macRetriesPerGroup[g];
         const uint64_t dsCtsCount = dsCtsPerGroup[g];
@@ -1683,6 +1704,7 @@ int main(int argc, char* argv[])
             << throughputMbps << ',' << payloadGoodputMbps << ',' << pdr << ','
             << packetLossRate << ',' << meanDelayMs << ',' << meanJitterMs << ','
             << p95DelayMs << ',' << p99DelayMs << ',' << p999DelayMs << ','
+            << within10 << ',' << within20 << ','
             << agg.jitterSamples << ',' << agg.txPackets << ',' << agg.rxPackets << ','
             << agg.txBytes << ',' << agg.rxBytes << ',' << agg.lostPackets << ','
             << macAttempts << ',' << macRetries << ',' << dsCtsCount << ','

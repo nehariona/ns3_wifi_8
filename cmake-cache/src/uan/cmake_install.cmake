@@ -1,4 +1,4 @@
-# Install script for directory: /home/prthvsr/ns3_wifi_8/src/uan
+# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/uan
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,11 +27,6 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
-# Install shared libraries without execute permission?
-if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
-endif()
-
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -44,25 +39,19 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/uan/examples/cmake_install.cmake")
+  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/uan/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so")
-    file(RPATH_CHECK
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so"
-         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
-  endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-uan-default.so")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so"
-         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
-         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-uan-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.dylib" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.dylib")
+    execute_process(COMMAND /usr/bin/install_name_tool
+      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
+      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
+      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.dylib")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.so")
+      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-uan-default.dylib")
     endif()
   endif()
 endif()
@@ -72,36 +61,36 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/home/prthvsr/ns3_wifi_8/src/uan/helper/acoustic-modem-energy-model-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/helper/uan-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/acoustic-modem-energy-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-channel.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-header-common.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-header-rc.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-mac-aloha.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-mac-cw.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-mac-rc-gw.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-mac-rc.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-mac.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-net-device.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-noise-model-default.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-noise-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-phy-dual.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-phy-gen.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-phy.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-prop-model-ideal.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-prop-model-thorp.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-prop-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-transducer-hd.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-transducer.h"
-    "/home/prthvsr/ns3_wifi_8/src/uan/model/uan-tx-mode.h"
-    "/home/prthvsr/ns3_wifi_8/build/include/ns3/uan-module.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/helper/acoustic-modem-energy-model-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/helper/uan-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/acoustic-modem-energy-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-channel.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-header-common.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-header-rc.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-mac-aloha.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-mac-cw.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-mac-rc-gw.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-mac-rc.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-mac.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-net-device.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-noise-model-default.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-noise-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-phy-dual.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-phy-gen.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-phy.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-prop-model-ideal.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-prop-model-thorp.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-prop-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-transducer-hd.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-transducer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/uan/model/uan-tx-mode.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/uan-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/uan/install_local_manifest.txt"
+  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/uan/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

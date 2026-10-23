@@ -1,4 +1,4 @@
-# Install script for directory: /home/prthvsr/ns3_wifi_8/src/applications
+# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/applications
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,11 +27,6 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
-# Install shared libraries without execute permission?
-if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
-endif()
-
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -44,25 +39,19 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/applications/examples/cmake_install.cmake")
+  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/applications/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so")
-    file(RPATH_CHECK
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so"
-         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
-  endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-applications-default.so")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so"
-         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
-         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-applications-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.dylib" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.dylib")
+    execute_process(COMMAND /usr/bin/install_name_tool
+      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
+      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
+      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.dylib")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.so")
+      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-applications-default.dylib")
     endif()
   endif()
 endif()
@@ -72,43 +61,43 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/bulk-send-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/on-off-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/packet-sink-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/three-gpp-http-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/udp-client-server-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/helper/udp-echo-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/application-packet-probe.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/bulk-send-application.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/onoff-application.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/packet-loss-counter.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/packet-sink.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/rta-tig-mobile-gaming.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/seq-ts-echo-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/seq-ts-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/seq-ts-size-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/sink-application.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/source-application.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/tgax-video-traffic.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/tgax-virtual-desktop.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/tgax-voip-traffic.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/three-gpp-http-client.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/three-gpp-http-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/three-gpp-http-server.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/three-gpp-http-variables.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/udp-client.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/udp-echo-client.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/udp-echo-server.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/udp-server.h"
-    "/home/prthvsr/ns3_wifi_8/src/applications/model/udp-trace-client.h"
-    "/home/prthvsr/ns3_wifi_8/build/include/ns3/applications-module.h"
-    "/home/prthvsr/ns3_wifi_8/build/include/ns3/applications-export.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/bulk-send-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/on-off-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/packet-sink-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/three-gpp-http-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/udp-client-server-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/helper/udp-echo-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/application-packet-probe.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/bulk-send-application.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/onoff-application.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/packet-loss-counter.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/packet-sink.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/rta-tig-mobile-gaming.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/seq-ts-echo-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/seq-ts-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/seq-ts-size-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/sink-application.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/source-application.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/tgax-video-traffic.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/tgax-virtual-desktop.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/tgax-voip-traffic.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/three-gpp-http-client.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/three-gpp-http-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/three-gpp-http-server.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/three-gpp-http-variables.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/udp-client.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/udp-echo-client.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/udp-echo-server.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/udp-server.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/applications/model/udp-trace-client.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/applications-module.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/applications-export.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/applications/install_local_manifest.txt"
+  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/applications/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

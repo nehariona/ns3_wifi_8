@@ -1,4 +1,4 @@
-# Install script for directory: /home/prthvsr/ns3_wifi_8/src/energy
+# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/energy
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,11 +27,6 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
-# Install shared libraries without execute permission?
-if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
-endif()
-
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -44,25 +39,19 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/energy/examples/cmake_install.cmake")
+  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/energy/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so")
-    file(RPATH_CHECK
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so"
-         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
-  endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-energy-default.so")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so"
-         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
-         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-energy-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.dylib" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.dylib")
+    execute_process(COMMAND /usr/bin/install_name_tool
+      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
+      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
+      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.dylib")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.so")
+      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-energy-default.dylib")
     endif()
   endif()
 endif()
@@ -72,31 +61,31 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/basic-energy-harvester-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/basic-energy-source-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/energy-harvester-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/energy-harvester-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/energy-model-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/energy-source-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/generic-battery-model-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/li-ion-energy-source-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/helper/rv-battery-model-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/basic-energy-harvester.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/basic-energy-source.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/device-energy-model-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/device-energy-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/energy-harvester.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/energy-source.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/generic-battery-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/rv-battery-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/energy/model/simple-device-energy-model.h"
-    "/home/prthvsr/ns3_wifi_8/build/include/ns3/energy-module.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/basic-energy-harvester-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/basic-energy-source-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/energy-harvester-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/energy-harvester-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/energy-model-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/energy-source-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/generic-battery-model-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/li-ion-energy-source-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/helper/rv-battery-model-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/basic-energy-harvester.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/basic-energy-source.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/device-energy-model-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/device-energy-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/energy-harvester.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/energy-source.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/generic-battery-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/rv-battery-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/energy/model/simple-device-energy-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/energy-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/energy/install_local_manifest.txt"
+  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/energy/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

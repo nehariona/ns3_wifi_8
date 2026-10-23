@@ -1,4 +1,4 @@
-# Install script for directory: /home/prthvsr/ns3_wifi_8/src/network
+# Install script for directory: /Users/neharionaalice/Downloads/ns-3.48/src/network
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -27,11 +27,6 @@ if(NOT CMAKE_INSTALL_COMPONENT)
   endif()
 endif()
 
-# Install shared libraries without execute permission?
-if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
-endif()
-
 # Is this installation the result of a crosscompile?
 if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
@@ -44,25 +39,19 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/prthvsr/ns3_wifi_8/cmake-cache/src/network/examples/cmake_install.cmake")
+  include("/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/network/examples/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so")
-    file(RPATH_CHECK
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so"
-         RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
-  endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/prthvsr/ns3_wifi_8/build/lib/libns3.48-network-default.so")
-  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so"
-         OLD_RPATH "/home/prthvsr/ns3_wifi_8/build/lib:::::::::::::::::::::::::::::::::::::::::::::::"
-         NEW_RPATH "/usr/local/lib:\$ORIGIN/:\$ORIGIN/../lib:/usr/local/lib64:\$ORIGIN/:\$ORIGIN/../lib64")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/Users/neharionaalice/Downloads/ns-3.48/build/lib/libns3.48-network-default.dylib")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.dylib" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.dylib")
+    execute_process(COMMAND /usr/bin/install_name_tool
+      -delete_rpath "/Users/neharionaalice/Downloads/ns-3.48/build/lib"
+      -add_rpath "/usr/local/lib:$ORIGIN/:$ORIGIN/../lib:/usr/local/lib64:$ORIGIN/:$ORIGIN/../lib64"
+      "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.dylib")
     if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.so")
+      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libns3.48-network-default.dylib")
     endif()
   endif()
 endif()
@@ -72,90 +61,90 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include/ns3" TYPE FILE FILES
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/application-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/application-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/delay-jitter-estimation.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/net-device-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/node-container.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/packet-socket-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/simple-net-device-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/helper/trace-helper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/application.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/buffer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/byte-tag-list.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/channel-list.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/channel.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/chunk.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/header.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/net-device.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/nix-vector.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/node-list.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/node.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/packet-metadata.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/packet-tag-list.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/packet.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/socket-factory.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/socket.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/tag-buffer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/tag.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/model/trailer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/address-utils.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/bit-deserializer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/bit-serializer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/crc32.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/data-rate.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/drop-tail-queue.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/dynamic-queue-limits.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/error-channel.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/error-model.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/ethernet-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/ethernet-trailer.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/flow-id-tag.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/generic-phy.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/header-serialization-test.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/inet-socket-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/inet6-socket-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/ipv4-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/ipv6-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/llc-snap-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/lollipop-counter.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/mac16-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/mac48-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/mac64-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/mac8-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/net-device-queue-interface.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/output-stream-wrapper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-burst.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-data-calculators.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-probe.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-socket-address.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-socket-client.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-socket-factory.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-socket-server.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packet-socket.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/packetbb.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/pcap-file-wrapper.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/pcap-file.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/pcap-test.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/queue-fwd.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/queue-item.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/queue-limits.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/queue-size.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/queue.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/radiotap-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/sequence-number.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/simple-channel.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/simple-net-device.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/sll-header.h"
-    "/home/prthvsr/ns3_wifi_8/src/network/utils/timestamp-tag.h"
-    "/home/prthvsr/ns3_wifi_8/build/include/ns3/network-module.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/application-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/application-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/delay-jitter-estimation.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/net-device-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/node-container.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/packet-socket-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/simple-net-device-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/helper/trace-helper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/application.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/buffer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/byte-tag-list.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/channel-list.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/channel.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/chunk.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/net-device.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/nix-vector.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/node-list.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/node.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/packet-metadata.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/packet-tag-list.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/packet.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/socket-factory.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/socket.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/tag-buffer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/tag.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/model/trailer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/address-utils.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/bit-deserializer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/bit-serializer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/crc32.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/data-rate.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/drop-tail-queue.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/dynamic-queue-limits.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/error-channel.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/error-model.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/ethernet-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/ethernet-trailer.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/flow-id-tag.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/generic-phy.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/header-serialization-test.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/inet-socket-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/inet6-socket-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/ipv4-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/ipv6-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/llc-snap-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/lollipop-counter.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/mac16-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/mac48-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/mac64-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/mac8-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/net-device-queue-interface.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/output-stream-wrapper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-burst.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-data-calculators.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-probe.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-socket-address.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-socket-client.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-socket-factory.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-socket-server.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packet-socket.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/packetbb.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/pcap-file-wrapper.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/pcap-file.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/pcap-test.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/queue-fwd.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/queue-item.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/queue-limits.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/queue-size.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/queue.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/radiotap-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/sequence-number.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/simple-channel.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/simple-net-device.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/sll-header.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/src/network/utils/timestamp-tag.h"
+    "/Users/neharionaalice/Downloads/ns-3.48/build/include/ns3/network-module.h"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/prthvsr/ns3_wifi_8/cmake-cache/src/network/install_local_manifest.txt"
+  file(WRITE "/Users/neharionaalice/Downloads/ns-3.48/cmake-cache/src/network/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

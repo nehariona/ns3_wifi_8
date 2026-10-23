@@ -8,6 +8,6 @@ URL:
 Version: 3.48
 Requires:  ns3-internet
 Requires.private: 
-Cflags: -I"${includedir}"  -I/usr/include -I/usr/include/freetype2 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/gtk-3.0 -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/atk-1.0 -I/usr/include/libxml2 -I/usr/include/python3.14
-Libs: -L"${libdir}" -lns3.48-flow-monitor-default  -lns3.48-internet-default -lstdc++exp
+Cflags: -I"${includedir}"  -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/libxml2
+Libs: -L"${libdir}" -lns3.48-flow-monitor-default  -lns3.48-internet-default
 Libs.private: -L"${libdir}" 

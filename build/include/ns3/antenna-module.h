@@ -3,7 +3,6 @@
 #endif 
 #ifndef NS3_MODULE_ANTENNA
     // Module headers: 
-    #include <ns3/circular-aperture-antenna-model.h>
     #include <ns3/angles.h>
     #include <ns3/antenna-model.h>
     #include <ns3/cosine-antenna-model.h>
