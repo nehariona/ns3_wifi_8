@@ -33,13 +33,13 @@ BURST_OFF_MEAN=2.0       # s, mean of the exponential gap between bursts
 PRESERVE_MEAN_LOAD=1     # 1: long-run mean = PER_AC_LOAD_MBPS per AC
 
 PAYLOAD_SIZE=1024
-SIM_TIME=60
+SIM_TIME=120
 WARMUP_TIME=5
 DRAIN_TIME=5
 BSS_RADIUS=5
 
 # ---- P-EDCA parameters (patch v3 defaults; verify against your draft) ---------
-PEDCA_QSRC_THR=1
+PEDCA_QSRC_THR=3
 PEDCA_PSRC_THR=4
 PEDCA_DS_AIFSN=2
 PEDCA_CW_DS=0

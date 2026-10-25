@@ -389,6 +389,7 @@ Txop::UpdateFailedCw(uint8_t linkId)
         // - QSRC[AC] shall be set to 0.
         // - CW[AC] shall be set to CWmin[AC].
         link.staRetryCount = 0;
+           ResetPsrc(linkId);
         link.cw = GetMinCw(linkId);
     }
 

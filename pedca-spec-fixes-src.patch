@@ -1,0 +1,199 @@
+diff --git a/src/wifi/model/frame-exchange-manager.cc b/src/wifi/model/frame-exchange-manager.cc
+index 0c185fc..081f16a 100644
+--- a/src/wifi/model/frame-exchange-manager.cc
++++ b/src/wifi/model/frame-exchange-manager.cc
+@@ -1158,11 +1158,6 @@ FrameExchangeManager::DropMpduIfRetryLimitReached(Ptr<WifiPsdu> psdu)
+         DequeueMpdu(mpdu);
+     }
+ 
+-    if (droppedMpdu && m_dcf)
+-    {
+-        m_dcf->ResetPsrc(m_linkId); // P-EDCA: a dropped frame also clears PSRC
+-    }
+-
+     return droppedMpdu;
+ }
+ 
+diff --git a/src/wifi/model/qos-frame-exchange-manager.cc b/src/wifi/model/qos-frame-exchange-manager.cc
+index 4ab9c76..4010f95 100644
+--- a/src/wifi/model/qos-frame-exchange-manager.cc
++++ b/src/wifi/model/qos-frame-exchange-manager.cc
+@@ -933,7 +933,8 @@ QosFrameExchangeManager::NeedNavUpdate(const WifiMacHeader& hdr,
+     }
+ 
+     // P-EDCA DS-CTS
+-    if (m_mac->GetPEdcaSupported() && voTxop->PedcaEligible(m_linkId))
++    if (m_mac->GetPEdcaSupported() && voTxop->GetPedcaJoinOnOverheardDsCts() &&
++        voTxop->PedcaEligible(m_linkId))
+     {
+         // An eligible P-EDCA STA (AP or non-AP) takes part in the P-EDCA contention instead of
+         // deferring. The contention starts at the end of the DS-CTS, which is also where the
+diff --git a/src/wifi/model/qos-txop.cc b/src/wifi/model/qos-txop.cc
+index 41d9e05..a3e3ad7 100644
+--- a/src/wifi/model/qos-txop.cc
++++ b/src/wifi/model/qos-txop.cc
+@@ -59,8 +59,9 @@ QosTxop::GetTypeId()
+                           MakeBooleanAccessor(&QosTxop::m_useExplicitBarAfterMissedBlockAck),
+                           MakeBooleanChecker())
+             .AddAttribute("PEdcaQsrcThreshold",
+-                          "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (0 is reserved).",
+-                          UintegerValue(1),
++                          "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (Table 37-1 default: 2; "
++                          "0 is reserved).",
++                          UintegerValue(2),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaQsrcThr),
+                           MakeUintegerChecker<uint8_t>(1))
+             .AddAttribute("PEdcaPsrcThreshold",
+@@ -76,9 +77,9 @@ QosTxop::GetTypeId()
+                           MakeUintegerChecker<uint8_t>(1, 15))
+             .AddAttribute("PEdcaCwDs",
+                           "P-EDCA: CWds[AC_VO]; DSr is drawn uniformly in [0, CWds] for every "
+-                          "DS-CTS attempt. 0 disables slot randomization. Verify the default "
+-                          "and any reserved values against the target draft.",
+-                          UintegerValue(7),
++                          "DS-CTS attempt. 0 (the Table 37-1 default) disables slot "
++                          "randomization.",
++                          UintegerValue(0),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
+                           MakeUintegerChecker<uint32_t>(0, 1023))
+             .AddAttribute("PEdcaStage2Aifsn",
+@@ -88,8 +89,8 @@ QosTxop::GetTypeId()
+                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2Aifsn),
+                           MakeUintegerChecker<uint8_t>(1, 15))
+             .AddAttribute("PEdcaStage2CwMin",
+-                          "P-EDCA: CWmin used by eligible STAs inside Stage 2. CW is set to "
+-                          "min(CWmax, 2^QSRC x (CWmin + 1) - 1) when Stage 2 starts.",
++                          "P-EDCA: CWmin used inside Stage 2. CW is initialized to this value "
++                          "when Stage 2 starts (37.5 of the draft).",
+                           UintegerValue(3),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMin),
+                           MakeUintegerChecker<uint32_t>(0, 1023))
+@@ -107,6 +108,14 @@ QosTxop::GetTypeId()
+                           TimeValue(Time{0}),
+                           MakeTimeAccessor(&QosTxop::m_pedcaStage2Window),
+                           MakeTimeChecker(Time{0}))
++            .AddAttribute("PEdcaJoinOnOverheardDsCts",
++                          "P-EDCA: if true, an eligible STA that overhears a DS-CTS sent by another "
++                          "STA joins the P-EDCA contention without sending a DS-CTS. The draft "
++                          "starts the contention only after a DS-CTS transmitted by the STA "
++                          "itself, hence the default is false (the STA sets its NAV instead).",
++                          BooleanValue(false),
++                          MakeBooleanAccessor(&QosTxop::m_pedcaJoinOnOverheardDsCts),
++                          MakeBooleanChecker())
+             .AddAttribute("PEdcaDsCtsAddress",
+                           "P-EDCA: the RA used to identify a DS-CTS frame. Defaults to the "
+                           "unicast address with OUI 00:0F:AC proposed in the 802.11bn PDT; "
+@@ -380,6 +389,12 @@ QosTxop::PedcaEligible(uint8_t linkId)
+            GetPsrc(linkId) < m_pedcaPsrcThr;
+ }
+ 
++bool
++QosTxop::GetPedcaJoinOnOverheardDsCts() const
++{
++    return m_pedcaJoinOnOverheardDsCts;
++}
++
+ bool
+ QosTxop::IsPedcaDsCtsPending(uint8_t linkId) const
+ {
+@@ -474,7 +489,10 @@ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
+ 
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
+     link.pedcaStage2End = Simulator::Now() + window;
+-    SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
++    // 37.5 (11-25/1214): at the start of the P-EDCA contention CW[AC_VO] is initialized to the
++    // P-EDCA CWmin (not to the QSRC-based value, which only applies when falling back to EDCA)
++    link.cw = std::min(m_pedcaStage2CwMin, m_pedcaStage2CwMax);
++    m_cwTrace(link.cw, linkId);
+ 
+     // Only the eligible AC_VO EDCAF of this station may contend during the P-EDCA contention:
+     // freeze the other EDCAFs for the window. They are resumed early by ExitPedcaStage2() if
+diff --git a/src/wifi/model/qos-txop.h b/src/wifi/model/qos-txop.h
+index 12c08cb..3fb1807 100644
+--- a/src/wifi/model/qos-txop.h
++++ b/src/wifi/model/qos-txop.h
+@@ -419,6 +419,11 @@ class QosTxop : public Txop
+      *         right to transmit a DS-CTS on the given link
+      */
+     bool IsPedcaDsCtsPending(uint8_t linkId) const;
++    /**
++     * @return true if an eligible STA overhearing a DS-CTS sent by another STA joins the P-EDCA
++     *         contention (default false: only STAs that transmitted a DS-CTS start the contention)
++     */
++    bool GetPedcaJoinOnOverheardDsCts() const;
+     /**
+      * @param linkId the ID of the given link
+      * @return true if this AC is currently in the P-EDCA contention (Stage 2) on the given link
+@@ -542,15 +547,16 @@ class QosTxop : public Txop
+      */
+     void PedcaStage2Timeout(uint8_t linkId);
+ 
+-    uint8_t m_pedcaQsrcThr{2};        //!< P-EDCA QSRC threshold
+-    uint8_t m_pedcaPsrcThr{5};        //!< P-EDCA PSRC threshold
+-    uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
+-    uint32_t m_pedcaCwDs{7};          //!< CWds: DSr is drawn in [0, CWds]
+-    uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
+-    uint32_t m_pedcaStage2CwMin{3};   //!< CWmin used by eligible STAs during Stage 2
+-    uint32_t m_pedcaStage2CwMax{7};   //!< CWmax used by eligible STAs during Stage 2
+-    Time m_pedcaStage2Window{0};      //!< P-EDCA contention duration (0: computed)
+-    Mac48Address m_pedcaDsCtsAddress; //!< the RA used to identify a DS-CTS frame
++    uint8_t m_pedcaQsrcThr{2};                //!< P-EDCA QSRC threshold
++    uint8_t m_pedcaPsrcThr{1};                //!< P-EDCA PSRC threshold
++    uint8_t m_pedcaDsAifsn{2};                //!< AIFSN used while contending to send a DS-CTS
++    uint32_t m_pedcaCwDs{0};                  //!< CWds: DSr is drawn in [0, CWds]
++    uint8_t m_pedcaStage2Aifsn{2};            //!< AIFSN used by eligible STAs during Stage 2
++    uint32_t m_pedcaStage2CwMin{3};           //!< CWmin used by eligible STAs during Stage 2
++    uint32_t m_pedcaStage2CwMax{7};           //!< CWmax used by eligible STAs during Stage 2
++    Time m_pedcaStage2Window{0};              //!< P-EDCA contention duration (0: computed)
++    Mac48Address m_pedcaDsCtsAddress;         //!< the RA used to identify a DS-CTS frame
++    bool m_pedcaJoinOnOverheardDsCts{false};  //!< join Stage 2 on an overheard DS-CTS
+ 
+     AcIndex m_ac;                     //!< the access category
+     Ptr<BlockAckManager> m_baManager; //!< the block ack manager
+diff --git a/src/wifi/model/txop.cc b/src/wifi/model/txop.cc
+index 41bc74e..8fc55a9 100644
+--- a/src/wifi/model/txop.cc
++++ b/src/wifi/model/txop.cc
+@@ -390,6 +390,8 @@ Txop::UpdateFailedCw(uint8_t linkId)
+         // - CW[AC] shall be set to CWmin[AC].
+         link.staRetryCount = 0;
+         link.cw = GetMinCw(linkId);
++        // P-EDCA: PSRC[AC_VO] is set to 0 whenever QSRC[AC_VO] is set to 0
++        ResetPsrc(linkId);
+     }
+ 
+     m_cwTrace(link.cw, linkId);
+diff --git a/src/wifi/model/wifi-phy.cc b/src/wifi/model/wifi-phy.cc
+index c4fcedf..6e46d28 100644
+--- a/src/wifi/model/wifi-phy.cc
++++ b/src/wifi/model/wifi-phy.cc
+@@ -1966,10 +1966,11 @@ uint64_t
+ WifiPhy::GetSameContentPpduUid()
+ {
+     // Stations transmitting simultaneously start at the same slot boundary, up to propagation
+-    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart, hence a 50 us bucket
+-    // gives the same UID to simultaneous transmissions and distinct UIDs to successive ones.
+-    return SAME_CONTENT_PPDU_UID_FLAG |
+-           static_cast<uint64_t>(Simulator::Now().GetNanoSeconds() / 50'000);
++    // delays (ns). A UID that depended on the time (e.g., a time bucket) could differ between
++    // two simultaneous transmissions that straddle a bucket boundary, so a constant is used:
++    // PPDUs with this UID that arrive within MaxDelaySameContentPpdu of the first one are
++    // combined, later ones are treated as interference (see PhyEntity::HandleRxPpduWithSameContent)
++    return SAME_CONTENT_PPDU_UID_FLAG;
+ }
+ 
+ void
+diff --git a/src/wifi/model/wifi-phy.h b/src/wifi/model/wifi-phy.h
+index d14871f..c4493d1 100644
+--- a/src/wifi/model/wifi-phy.h
++++ b/src/wifi/model/wifi-phy.h
+@@ -1287,7 +1287,8 @@ class WIFI_EXPORT WifiPhy : public Object
+     /**
+      * Get a UID for a PPDU whose content is identical to that of PPDUs that other stations may
+      * transmit at the same time (see SAME_CONTENT_PPDU_UID_FLAG). All stations calling this
+-     * method within the same 50 us interval obtain the same UID.
++     * method obtain the same UID; PPDUs arriving more than MaxDelaySameContentPpdu after the
++     * first one are not combined.
+      *
+      * @return the UID to use for the PPDU
+      */

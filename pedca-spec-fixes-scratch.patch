@@ -1,0 +1,114 @@
+diff --git a/scratch/pedca-final.cc b/scratch/pedca-final.cc
+index 20f6149..0383f8f 100644
+--- a/scratch/pedca-final.cc
++++ b/scratch/pedca-final.cc
+@@ -444,8 +444,9 @@ MacRetryCounter::GetAttemptsForNode(uint32_t nodeId) const
+  * Connects to the patch's Txop::PsrcTrace trace source on every station's
+  * AC_VO EDCAF and counts DS-CTS transmissions per node. PsrcTrace fires on
+  * BOTH increments (a DS-CTS was actually sent -- see
+- * QosFrameExchangeManager::SendPedcaDsCts) and resets to 0 (successful Ack
+- * or dropped MPDU -- see Txop::ResetPsrc / its call sites); a reset alone,
++ * QosFrameExchangeManager::SendPedcaDsCts) and resets to 0 (whenever QSRC is
++ * reset: successful delivery or QSRC reaching the retry limit -- see
++ * Txop::ResetCw / Txop::UpdateFailedCw); a reset alone,
+  * with no prior increment, is not a DS-CTS. This class tracks the last
+  * value seen per node so only genuine increments are counted, which also
+  * makes it safe to connect on every station: AC_VO_LEGACY stations never
+@@ -572,10 +573,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-sweep.cc b/scratch/pedca-ratio-sweep.cc
+index 9a8bbae..f87096b 100644
+--- a/scratch/pedca-ratio-sweep.cc
++++ b/scratch/pedca-ratio-sweep.cc
+@@ -454,10 +454,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-validation-poisson-burst.cc b/scratch/pedca-ratio-validation-poisson-burst.cc
+index c17f279..ca76ed5 100644
+--- a/scratch/pedca-ratio-validation-poisson-burst.cc
++++ b/scratch/pedca-ratio-validation-poisson-burst.cc
+@@ -434,10 +434,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 1;
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 1;
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-validation.cc b/scratch/pedca-ratio-validation.cc
+index bc45524..25e06a5 100644
+--- a/scratch/pedca-ratio-validation.cc
++++ b/scratch/pedca-ratio-validation.cc
+@@ -454,10 +454,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-txop-ratio-sweep.cc b/scratch/pedca-txop-ratio-sweep.cc
+index 6dbcb51..668bd9d 100644
+--- a/scratch/pedca-txop-ratio-sweep.cc
++++ b/scratch/pedca-txop-ratio-sweep.cc
+@@ -571,10 +571,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-validation-poisson.cc b/scratch/pedca-validation-poisson.cc
+index d2862ce..896fe39 100644
+--- a/scratch/pedca-validation-poisson.cc
++++ b/scratch/pedca-validation-poisson.cc
+@@ -562,10 +562,10 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 1;
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // 3 is reserved by the draft -- see validation below
+     uint32_t pedcaStage2Aifsn = 1;
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
