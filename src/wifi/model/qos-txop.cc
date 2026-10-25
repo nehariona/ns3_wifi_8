@@ -76,9 +76,10 @@ QosTxop::GetTypeId()
                           MakeUintegerChecker<uint8_t>(1, 15))
             .AddAttribute("PEdcaCwDs",
                           "P-EDCA: CWds[AC_VO]; DSr is drawn uniformly in [0, CWds] for every "
-                          "DS-CTS attempt. 0 disables slot randomization. Verify the default "
-                          "and any reserved values against the target draft.",
-                          UintegerValue(7),
+                          "DS-CTS attempt, i.e. CWmin = CWmax = CWds while contending for a "
+                          "DS-CTS. The default 0 disables slot randomization, so all P-EDCA STAs "
+                          "send their DS-CTS in the same slot. Verify against the target draft.",
+                          UintegerValue(0),
                           MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
                           MakeUintegerChecker<uint32_t>(0, 1023))
             .AddAttribute("PEdcaStage2Aifsn",
@@ -452,6 +453,10 @@ QosTxop::UpdatePedcaContention(uint8_t linkId)
         link.pedcaPhase = QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
         link.cw = m_pedcaCwDs;
         m_cwTrace(link.cw, linkId);
+        NS_LOG_DEBUG("DS-CTS contention params: link=" << +linkId << " CWmin=" << GetMinCw(linkId)
+                                                       << " CWmax=" << GetMaxCw(linkId)
+                                                       << " CW=" << link.cw
+                                                       << " AIFSN=" << +GetAifsn(linkId));
     }
     else
     {
@@ -472,9 +477,18 @@ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
     auto& link = GetLink(linkId);
     auto cam = m_mac->GetChannelAccessManager(linkId);
 
+    // If access is GRANTED, this AC is the DS-CTS sender (its PSRC was already incremented)
+    link.pedcaDsCtsSender = (link.access == GRANTED);
+    ++link.pedcaRound;
     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
     link.pedcaStage2End = Simulator::Now() + window;
     SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
+    NS_LOG_DEBUG("Enter P-EDCA Stage 2: link=" << +linkId << " round=" << link.pedcaRound
+                                               << " role=" << (link.pedcaDsCtsSender ? "DS-CTS sender" : "receiver")
+                                               << " window=" << window.As(Time::US)
+                                               << " QSRC=" << GetStaRetryCount(linkId)
+                                               << " PSRC=" << GetPsrc(linkId)
+                                               << " CW=" << link.cw);
 
     // Only the eligible AC_VO EDCAF of this station may contend during the P-EDCA contention:
     // freeze the other EDCAFs for the window. They are resumed early by ExitPedcaStage2() if
@@ -520,7 +534,36 @@ QosTxop::PedcaStage2Timeout(uint8_t linkId)
         NS_LOG_DEBUG("P-EDCA contention window ended during our own exchange");
         return;
     }
+    // The window expired and we never got the TXOP: we lost the P-EDCA contention
+    PedcaStage2Lost(linkId);
     ExitPedcaStage2(linkId);
+}
+
+void
+QosTxop::PedcaStage2Lost(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    auto& link = GetLink(linkId);
+    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2 || !HasFramesToTransmit(linkId))
+    {
+        return; // we did not actually contend
+    }
+    // loss accounting must happen at most once per Stage 2 round
+    NS_ASSERT_MSG(link.pedcaLossRound != link.pedcaRound,
+                  "P-EDCA loss accounted twice for round " << link.pedcaRound);
+    link.pedcaLossRound = link.pedcaRound;
+    if (!link.pedcaDsCtsSender)
+    {
+        // the DS-CTS sender already incremented PSRC when it sent the DS-CTS
+        IncrementPsrc(linkId);
+    }
+    // QSRC++ (and CW update, which ExitPedcaStage2() recomputes with the EDCA CWmin/CWmax)
+    UpdateFailedCw(linkId);
+    NS_LOG_DEBUG("Lost P-EDCA contention on link " << +linkId << " round=" << link.pedcaRound
+                                                   << " role=" << (link.pedcaDsCtsSender ? "DS-CTS sender" : "receiver")
+                                                   << ": PSRC=" << GetPsrc(linkId)
+                                                   << " QSRC=" << GetStaRetryCount(linkId)
+                                                   << " cw=" << link.cw);
 }
 
 void
@@ -532,8 +575,13 @@ QosTxop::ExitPedcaStage2(uint8_t linkId)
         return; // already left through another exit path; nothing to do
     }
     NS_LOG_FUNCTION(this << +linkId);
+    NS_LOG_DEBUG("Exit P-EDCA Stage 2: link=" << +linkId << " round=" << link.pedcaRound
+                                              << " access=" << link.access
+                                              << " QSRC=" << GetStaRetryCount(linkId)
+                                              << " PSRC=" << GetPsrc(linkId));
     link.pedcaStage2Timeout.Cancel();
     link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
+    link.pedcaDsCtsSender = false;
 
     // Restore the dot11EDCATable parameters and set
     // CW[AC_VO] = min(CWmax[AC_VO], 2^QSRC[AC_VO] x (CWmin[AC_VO] + 1) - 1). After a successful

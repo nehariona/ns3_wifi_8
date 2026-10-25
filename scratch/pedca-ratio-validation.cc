@@ -457,7 +457,7 @@ main(int argc, char* argv[])
     uint32_t pedcaQsrcThreshold = 1;
     uint32_t pedcaPsrcThreshold = 1;
     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
+    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
     uint32_t pedcaStage2CwMin = 3;
     uint32_t pedcaStage2CwMax = 7;

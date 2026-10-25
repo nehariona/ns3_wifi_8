@@ -1,0 +1,403 @@
+diff --git a/run_pedca_poisson.sh b/run_pedca_poisson.sh
+index 0b742fe..980ab4d 100755
+--- a/run_pedca_poisson.sh
++++ b/run_pedca_poisson.sh
+@@ -39,8 +39,8 @@ BSS_RADIUS=5
+ # assumed.
+ PEDCA_QSRC_THR=1
+ PEDCA_PSRC_THR=1
+-PEDCA_DS_AIFSN=1
+-PEDCA_CW_DS=7          # NOT 3: the draft reserves 3, see qos-txop.cc comment
++PEDCA_DS_AIFSN=2
++PEDCA_CW_DS=0          # NOT 3: the draft reserves 3, see qos-txop.cc comment
+ PEDCA_STAGE2_AIFSN=2
+ PEDCA_STAGE2_CWMIN=3
+ PEDCA_STAGE2_CWMAX=7
+diff --git a/run_pedca_ratio.sh b/run_pedca_ratio.sh
+index 82ec8f0..b0fe15a 100755
+--- a/run_pedca_ratio.sh
++++ b/run_pedca_ratio.sh
+@@ -40,7 +40,7 @@ BSS_RADIUS=5
+ PEDCA_QSRC_THR=2
+ PEDCA_PSRC_THR=4
+ PEDCA_DS_AIFSN=2
+-PEDCA_CW_DS=7          # NOT 3: the draft reserves 3, see qos-txop.cc comment
++PEDCA_CW_DS=0          # NOT 3: the draft reserves 3, see qos-txop.cc comment
+ PEDCA_STAGE2_AIFSN=2
+ PEDCA_STAGE2_CWMIN=3
+ PEDCA_STAGE2_CWMAX=7
+diff --git a/run_pedca_ratio_sweep_cbr.sh b/run_pedca_ratio_sweep_cbr.sh
+index f80b043..c23ead2 100755
+--- a/run_pedca_ratio_sweep_cbr.sh
++++ b/run_pedca_ratio_sweep_cbr.sh
+@@ -42,7 +42,7 @@ BSS_RADIUS=5
+ PEDCA_QSRC_THR=1
+ PEDCA_PSRC_THR=1
+ PEDCA_DS_AIFSN=2        # DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-PEDCA_CW_DS=7          # NOT 3: the draft reserves 3, see qos-txop.cc comment
++PEDCA_CW_DS=0          # NOT 3: the draft reserves 3, see qos-txop.cc comment
+ PEDCA_STAGE2_AIFSN=2
+ PEDCA_STAGE2_CWMIN=3
+ PEDCA_STAGE2_CWMAX=7
+diff --git a/run_pedca_validation.sh b/run_pedca_validation.sh
+new file mode 100755
+index 0000000..4fa639b
+--- /dev/null
++++ b/run_pedca_validation.sh
+@@ -0,0 +1,41 @@
++#!/usr/bin/env bash
++# run_pedca_validation.sh - small P-EDCA validation runs with debug logging (UNTESTED helper).
++#
++# Needs a debug build (./ns3 configure -d debug --enable-logs) so that NS_LOG_DEBUG is compiled in.
++#
++#   T2: several P-EDCA STAs, CWds=0  -> DS-CTS frames from different STAs should share one uid and
++#                                      start within the same slot; Stage 2 entered by all of them
++#   T6: PSRC threshold 2             -> a Stage 2 loser should account PSRC/QSRC exactly once per
++#                                      round and, while eligible, send another DS-CTS
++#
++# Usage: ./run_pedca_validation.sh [nVoPedca] [simTimeSeconds]
++set -euo pipefail
++
++N_PEDCA="${1:-3}"
++SIM_TIME="${2:-1}"
++OUT_DIR="results/pedca_validation"
++mkdir -p "${OUT_DIR}"
++
++export NS_LOG="QosTxop=level_debug|prefix_time|prefix_node:QosFrameExchangeManager=level_debug|prefix_time|prefix_node:WifiPhy=level_debug|prefix_time|prefix_node:PhyEntity=level_debug|prefix_time|prefix_node"
++
++run_case() {
++    local tag="$1"; shift
++    local log="${OUT_DIR}/${tag}.log"
++    echo "=== ${tag} -> ${log}"
++    ./ns3 run "scratch/pedca-final --nVoLegacy=0 --nVoPedca=${N_PEDCA} --nVi=0 --nBe=0 --nBk=0 \
++        --simulationTime=${SIM_TIME} --pedcaCwDs=0 --pedcaDsAifsn=2 --outputCsv=${OUT_DIR}/${tag}.csv $*" \
++        > "${log}" 2>&1 || echo "run failed, see ${log}"
++}
++
++run_case T2_simultaneous_dscts --pedcaPsrcThreshold=1
++run_case T6_stage2_loss        --pedcaPsrcThreshold=2
++
++for f in "${OUT_DIR}"/T2_simultaneous_dscts.log "${OUT_DIR}"/T6_stage2_loss.log; do
++    echo "--- $(basename "$f")"
++    echo "DS-CTS transmissions:       $(grep -c 'P-EDCA DS-CTS TX' "$f" || true)"
++    echo "DS-CTS TX with effCw != 0:  $(grep 'P-EDCA DS-CTS TX' "$f" | grep -vc 'effCw=0 ' || true)"
++    echo "Distinct DS-CTS uids:       $(grep 'P-EDCA DS-CTS TX' "$f" | sed -E 's/.*uid=([0-9]+).*/\1/' | sort -u | wc -l)"
++    echo "Same-content combines:      $(grep -c 'combined, arrival offset' "$f" || true)"
++    echo "Stage 2 entries/exits:      $(grep -c 'Enter P-EDCA Stage 2' "$f" || true) / $(grep -c 'Exit P-EDCA Stage 2' "$f" || true)"
++    echo "Stage 2 losses accounted:   $(grep -c 'Lost P-EDCA contention' "$f" || true)"
++done
+diff --git a/run_txop_pedca_ratio_sweep.sh b/run_txop_pedca_ratio_sweep.sh
+index ccae5c4..fa76fe9 100755
+--- a/run_txop_pedca_ratio_sweep.sh
++++ b/run_txop_pedca_ratio_sweep.sh
+@@ -42,7 +42,7 @@ BSS_RADIUS=5
+ PEDCA_QSRC_THR=1
+ PEDCA_PSRC_THR=4
+ PEDCA_DS_AIFSN=2
+-PEDCA_CW_DS=7
++PEDCA_CW_DS=0
+ PEDCA_STAGE2_AIFSN=2
+ PEDCA_STAGE2_CWMIN=3
+ PEDCA_STAGE2_CWMAX=7
+diff --git a/scratch/pedca-final.cc b/scratch/pedca-final.cc
+index 20f6149..8bbecb0 100644
+--- a/scratch/pedca-final.cc
++++ b/scratch/pedca-final.cc
+@@ -575,7 +575,7 @@ main(int argc, char* argv[])
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-sweep.cc b/scratch/pedca-ratio-sweep.cc
+index 9a8bbae..161a6b0 100644
+--- a/scratch/pedca-ratio-sweep.cc
++++ b/scratch/pedca-ratio-sweep.cc
+@@ -457,7 +457,7 @@ main(int argc, char* argv[])
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-validation-poisson-burst.cc b/scratch/pedca-ratio-validation-poisson-burst.cc
+index c17f279..a4820e5 100644
+--- a/scratch/pedca-ratio-validation-poisson-burst.cc
++++ b/scratch/pedca-ratio-validation-poisson-burst.cc
+@@ -436,8 +436,8 @@ main(int argc, char* argv[])
+      */
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+-    uint32_t pedcaDsAifsn = 1;
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaDsAifsn = 2;
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 1;
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-ratio-validation.cc b/scratch/pedca-ratio-validation.cc
+index bc45524..c990a82 100644
+--- a/scratch/pedca-ratio-validation.cc
++++ b/scratch/pedca-ratio-validation.cc
+@@ -457,7 +457,7 @@ main(int argc, char* argv[])
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-txop-ratio-sweep.cc b/scratch/pedca-txop-ratio-sweep.cc
+index 6dbcb51..2be8ad3 100644
+--- a/scratch/pedca-txop-ratio-sweep.cc
++++ b/scratch/pedca-txop-ratio-sweep.cc
+@@ -574,7 +574,7 @@ main(int argc, char* argv[])
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/scratch/pedca-validation-poisson.cc b/scratch/pedca-validation-poisson.cc
+index d2862ce..e71a207 100644
+--- a/scratch/pedca-validation-poisson.cc
++++ b/scratch/pedca-validation-poisson.cc
+@@ -564,8 +564,8 @@ main(int argc, char* argv[])
+      */
+     uint32_t pedcaQsrcThreshold = 1;
+     uint32_t pedcaPsrcThreshold = 1;
+-    uint32_t pedcaDsAifsn = 1;
+-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
++    uint32_t pedcaDsAifsn = 2;
++    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 1;
+     uint32_t pedcaStage2CwMin = 3;
+     uint32_t pedcaStage2CwMax = 7;
+diff --git a/src/wifi/model/phy-entity.cc b/src/wifi/model/phy-entity.cc
+index 2c774db..33ae9b1 100644
+--- a/src/wifi/model/phy-entity.cc
++++ b/src/wifi/model/phy-entity.cc
+@@ -963,6 +963,8 @@ PhyEntity::HandleRxPpduWithSameContent(Ptr<Event> event,
+         return;
+     }
+ 
++    NS_LOG_DEBUG("Same-content PPDU uid=" << ppdu->GetUid() << " combined, arrival offset "
++                                          << (Simulator::Now() - event->GetStartTime()).As(Time::NS));
+     // Update received power and TXVECTOR of the event associated to that transmission upon
+     // reception of a signal adding up constructively (in case of a UL MU PPDU or non-HT duplicate
+     // PPDU)
+diff --git a/src/wifi/model/qos-frame-exchange-manager.cc b/src/wifi/model/qos-frame-exchange-manager.cc
+index 4ab9c76..f65d865 100644
+--- a/src/wifi/model/qos-frame-exchange-manager.cc
++++ b/src/wifi/model/qos-frame-exchange-manager.cc
+@@ -208,10 +208,28 @@ QosFrameExchangeManager::SendPedcaDsCts(Ptr<QosTxop> edca)
+     // All DS-CTS frames are identical (no TA, same RA and Duration, fixed scrambler seed), hence
+     // DS-CTS frames sent in the same slot by several P-EDCA STAs add up at the receivers instead
+     // of colliding. Model this by giving them the same PPDU UID.
+-    m_phy->SetNextTxPpduUid(WifiPhy::GetSameContentPpduUid());
++    const auto dsCtsUid = WifiPhy::GetSameContentPpduUid();
++    NS_LOG_DEBUG("P-EDCA DS-CTS TX: self=" << m_self << " link=" << +m_linkId
++                                           << " uid=" << dsCtsUid
++                                           << " effCw=" << edca->GetCw(m_linkId)
++                                           << " minCw=" << edca->GetMinCw(m_linkId)
++                                           << " maxCw=" << edca->GetMaxCw(m_linkId)
++                                           << " backoffSlots=" << edca->GetBackoffSlots(m_linkId)
++                                           << " QSRC=" << edca->GetStaRetryCount(m_linkId)
++                                           << " PSRC=" << edca->GetPsrc(m_linkId)
++                                           << " duration=" << txDuration.As(Time::US));
++    m_phy->SetNextTxPpduUid(dsCtsUid);
+     ForwardMpduDown(mpdu, dsCtsTxVector);
+-    m_phy->TakeNextTxPpduUid(); // in case the PHY did not build a PPDU (e.g., PHY off)
+-    edca->IncrementPsrc(m_linkId);
++    // If the UID is still set, the PHY did not build a PPDU (e.g., PHY off): the DS-CTS was
++    // not sent, hence PSRC must not be incremented
++    if (!m_phy->TakeNextTxPpduUid().has_value())
++    {
++        edca->IncrementPsrc(m_linkId);
++    }
++    else
++    {
++        NS_LOG_DEBUG("P-EDCA DS-CTS not sent by the PHY: PSRC not incremented");
++    }
+ 
+     // The Duration of a CTS counts from the end of the frame, and that is also when receivers
+     // enter the P-EDCA contention (see NeedNavUpdate). Enter first, so that the backoff
+diff --git a/src/wifi/model/qos-txop.cc b/src/wifi/model/qos-txop.cc
+index 41d9e05..1421e82 100644
+--- a/src/wifi/model/qos-txop.cc
++++ b/src/wifi/model/qos-txop.cc
+@@ -76,9 +76,10 @@ QosTxop::GetTypeId()
+                           MakeUintegerChecker<uint8_t>(1, 15))
+             .AddAttribute("PEdcaCwDs",
+                           "P-EDCA: CWds[AC_VO]; DSr is drawn uniformly in [0, CWds] for every "
+-                          "DS-CTS attempt. 0 disables slot randomization. Verify the default "
+-                          "and any reserved values against the target draft.",
+-                          UintegerValue(7),
++                          "DS-CTS attempt, i.e. CWmin = CWmax = CWds while contending for a "
++                          "DS-CTS. The default 0 disables slot randomization, so all P-EDCA STAs "
++                          "send their DS-CTS in the same slot. Verify against the target draft.",
++                          UintegerValue(0),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaCwDs),
+                           MakeUintegerChecker<uint32_t>(0, 1023))
+             .AddAttribute("PEdcaStage2Aifsn",
+@@ -452,6 +453,10 @@ QosTxop::UpdatePedcaContention(uint8_t linkId)
+         link.pedcaPhase = QosLinkEntity::PedcaPhase::DS_CTS_PENDING;
+         link.cw = m_pedcaCwDs;
+         m_cwTrace(link.cw, linkId);
++        NS_LOG_DEBUG("DS-CTS contention params: link=" << +linkId << " CWmin=" << GetMinCw(linkId)
++                                                       << " CWmax=" << GetMaxCw(linkId)
++                                                       << " CW=" << link.cw
++                                                       << " AIFSN=" << +GetAifsn(linkId));
+     }
+     else
+     {
+@@ -472,9 +477,18 @@ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
+     auto& link = GetLink(linkId);
+     auto cam = m_mac->GetChannelAccessManager(linkId);
+ 
++    // If access is GRANTED, this AC is the DS-CTS sender (its PSRC was already incremented)
++    link.pedcaDsCtsSender = (link.access == GRANTED);
++    ++link.pedcaRound;
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
+     link.pedcaStage2End = Simulator::Now() + window;
+     SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
++    NS_LOG_DEBUG("Enter P-EDCA Stage 2: link=" << +linkId << " round=" << link.pedcaRound
++                                               << " role=" << (link.pedcaDsCtsSender ? "DS-CTS sender" : "receiver")
++                                               << " window=" << window.As(Time::US)
++                                               << " QSRC=" << GetStaRetryCount(linkId)
++                                               << " PSRC=" << GetPsrc(linkId)
++                                               << " CW=" << link.cw);
+ 
+     // Only the eligible AC_VO EDCAF of this station may contend during the P-EDCA contention:
+     // freeze the other EDCAFs for the window. They are resumed early by ExitPedcaStage2() if
+@@ -520,9 +534,38 @@ QosTxop::PedcaStage2Timeout(uint8_t linkId)
+         NS_LOG_DEBUG("P-EDCA contention window ended during our own exchange");
+         return;
+     }
++    // The window expired and we never got the TXOP: we lost the P-EDCA contention
++    PedcaStage2Lost(linkId);
+     ExitPedcaStage2(linkId);
+ }
+ 
++void
++QosTxop::PedcaStage2Lost(uint8_t linkId)
++{
++    NS_LOG_FUNCTION(this << +linkId);
++    auto& link = GetLink(linkId);
++    if (link.pedcaPhase != QosLinkEntity::PedcaPhase::STAGE2 || !HasFramesToTransmit(linkId))
++    {
++        return; // we did not actually contend
++    }
++    // loss accounting must happen at most once per Stage 2 round
++    NS_ASSERT_MSG(link.pedcaLossRound != link.pedcaRound,
++                  "P-EDCA loss accounted twice for round " << link.pedcaRound);
++    link.pedcaLossRound = link.pedcaRound;
++    if (!link.pedcaDsCtsSender)
++    {
++        // the DS-CTS sender already incremented PSRC when it sent the DS-CTS
++        IncrementPsrc(linkId);
++    }
++    // QSRC++ (and CW update, which ExitPedcaStage2() recomputes with the EDCA CWmin/CWmax)
++    UpdateFailedCw(linkId);
++    NS_LOG_DEBUG("Lost P-EDCA contention on link " << +linkId << " round=" << link.pedcaRound
++                                                   << " role=" << (link.pedcaDsCtsSender ? "DS-CTS sender" : "receiver")
++                                                   << ": PSRC=" << GetPsrc(linkId)
++                                                   << " QSRC=" << GetStaRetryCount(linkId)
++                                                   << " cw=" << link.cw);
++}
++
+ void
+ QosTxop::ExitPedcaStage2(uint8_t linkId)
+ {
+@@ -532,8 +575,13 @@ QosTxop::ExitPedcaStage2(uint8_t linkId)
+         return; // already left through another exit path; nothing to do
+     }
+     NS_LOG_FUNCTION(this << +linkId);
++    NS_LOG_DEBUG("Exit P-EDCA Stage 2: link=" << +linkId << " round=" << link.pedcaRound
++                                              << " access=" << link.access
++                                              << " QSRC=" << GetStaRetryCount(linkId)
++                                              << " PSRC=" << GetPsrc(linkId));
+     link.pedcaStage2Timeout.Cancel();
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::NORMAL;
++    link.pedcaDsCtsSender = false;
+ 
+     // Restore the dot11EDCATable parameters and set
+     // CW[AC_VO] = min(CWmax[AC_VO], 2^QSRC[AC_VO] x (CWmin[AC_VO] + 1) - 1). After a successful
+diff --git a/src/wifi/model/qos-txop.h b/src/wifi/model/qos-txop.h
+index 12c08cb..dae0c55 100644
+--- a/src/wifi/model/qos-txop.h
++++ b/src/wifi/model/qos-txop.h
+@@ -492,6 +492,10 @@ class QosTxop : public Txop
+         PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
+         Time pedcaStage2End{0};                    //!< end of the current P-EDCA contention
+         EventId pedcaStage2Timeout;                //!< P-EDCA contention expiry event
++        bool pedcaDsCtsSender{false}; //!< true if this AC sent the DS-CTS opening the current
++                                      //!< Stage 2 (its PSRC was already incremented)
++        uint64_t pedcaRound{0};       //!< ID of the current/last Stage 2 (incremented on entry)
++        uint64_t pedcaLossRound{0};   //!< ID of the last Stage 2 for which a loss was accounted
+     };
+ 
+     void DoDispose() override;
+@@ -541,11 +545,20 @@ class QosTxop : public Txop
+      * @param linkId the ID of the given link
+      */
+     void PedcaStage2Timeout(uint8_t linkId);
++    /**
++     * Account for a lost P-EDCA contention: this AC took part in Stage 2 (it had frames to
++     * transmit) but did not obtain the TXOP. PSRC is incremented (unless this AC itself sent the
++     * DS-CTS, in which case it was already incremented when the DS-CTS was sent) and QSRC is
++     * incremented through UpdateFailedCw().
++     *
++     * @param linkId the ID of the given link
++     */
++    void PedcaStage2Lost(uint8_t linkId);
+ 
+-    uint8_t m_pedcaQsrcThr{2};        //!< P-EDCA QSRC threshold
+-    uint8_t m_pedcaPsrcThr{5};        //!< P-EDCA PSRC threshold
++    uint8_t m_pedcaQsrcThr{1};        //!< P-EDCA QSRC threshold
++    uint8_t m_pedcaPsrcThr{1};        //!< P-EDCA PSRC threshold
+     uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
+-    uint32_t m_pedcaCwDs{7};          //!< CWds: DSr is drawn in [0, CWds]
++    uint32_t m_pedcaCwDs{0};          //!< CWds: DSr is drawn in [0, CWds]
+     uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
+     uint32_t m_pedcaStage2CwMin{3};   //!< CWmin used by eligible STAs during Stage 2
+     uint32_t m_pedcaStage2CwMax{7};   //!< CWmax used by eligible STAs during Stage 2
+diff --git a/src/wifi/model/wifi-phy.cc b/src/wifi/model/wifi-phy.cc
+index c4fcedf..c589ef0 100644
+--- a/src/wifi/model/wifi-phy.cc
++++ b/src/wifi/model/wifi-phy.cc
+@@ -1966,10 +1966,21 @@ uint64_t
+ WifiPhy::GetSameContentPpduUid()
+ {
+     // Stations transmitting simultaneously start at the same slot boundary, up to propagation
+-    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart, hence a 50 us bucket
+-    // gives the same UID to simultaneous transmissions and distinct UIDs to successive ones.
+-    return SAME_CONTENT_PPDU_UID_FLAG |
+-           static_cast<uint64_t>(Simulator::Now().GetNanoSeconds() / 50'000);
++    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart. All calls within
++    // 1 us of the first call of a round share the same UID; a call
++    // outside that window starts a new round. (Fixed absolute time buckets could split two
++    // simultaneous transmissions that straddle a bucket boundary.)
++    constexpr int64_t SAME_CONTENT_ROUND_WINDOW_NS = 1000;
++    static uint64_t roundId = 0;
++    static int64_t roundStartNs = -1;
++    const int64_t nowNs = Simulator::Now().GetNanoSeconds();
++    if (roundStartNs < 0 || nowNs < roundStartNs ||
++        nowNs - roundStartNs > SAME_CONTENT_ROUND_WINDOW_NS)
++    {
++        ++roundId;
++        roundStartNs = nowNs;
++    }
++    return SAME_CONTENT_PPDU_UID_FLAG | roundId;
+ }
+ 
+ void
+ 

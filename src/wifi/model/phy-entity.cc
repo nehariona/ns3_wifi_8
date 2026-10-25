@@ -963,6 +963,8 @@ PhyEntity::HandleRxPpduWithSameContent(Ptr<Event> event,
         return;
     }
 
+    NS_LOG_DEBUG("Same-content PPDU uid=" << ppdu->GetUid() << " combined, arrival offset "
+                                          << (Simulator::Now() - event->GetStartTime()).As(Time::NS));
     // Update received power and TXVECTOR of the event associated to that transmission upon
     // reception of a signal adding up constructively (in case of a UL MU PPDU or non-HT duplicate
     // PPDU)

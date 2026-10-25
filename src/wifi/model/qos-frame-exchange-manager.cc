@@ -208,10 +208,28 @@ QosFrameExchangeManager::SendPedcaDsCts(Ptr<QosTxop> edca)
     // All DS-CTS frames are identical (no TA, same RA and Duration, fixed scrambler seed), hence
     // DS-CTS frames sent in the same slot by several P-EDCA STAs add up at the receivers instead
     // of colliding. Model this by giving them the same PPDU UID.
-    m_phy->SetNextTxPpduUid(WifiPhy::GetSameContentPpduUid());
+    const auto dsCtsUid = WifiPhy::GetSameContentPpduUid();
+    NS_LOG_DEBUG("P-EDCA DS-CTS TX: self=" << m_self << " link=" << +m_linkId
+                                           << " uid=" << dsCtsUid
+                                           << " effCw=" << edca->GetCw(m_linkId)
+                                           << " minCw=" << edca->GetMinCw(m_linkId)
+                                           << " maxCw=" << edca->GetMaxCw(m_linkId)
+                                           << " backoffSlots=" << edca->GetBackoffSlots(m_linkId)
+                                           << " QSRC=" << edca->GetStaRetryCount(m_linkId)
+                                           << " PSRC=" << edca->GetPsrc(m_linkId)
+                                           << " duration=" << txDuration.As(Time::US));
+    m_phy->SetNextTxPpduUid(dsCtsUid);
     ForwardMpduDown(mpdu, dsCtsTxVector);
-    m_phy->TakeNextTxPpduUid(); // in case the PHY did not build a PPDU (e.g., PHY off)
-    edca->IncrementPsrc(m_linkId);
+    // If the UID is still set, the PHY did not build a PPDU (e.g., PHY off): the DS-CTS was
+    // not sent, hence PSRC must not be incremented
+    if (!m_phy->TakeNextTxPpduUid().has_value())
+    {
+        edca->IncrementPsrc(m_linkId);
+    }
+    else
+    {
+        NS_LOG_DEBUG("P-EDCA DS-CTS not sent by the PHY: PSRC not incremented");
+    }
 
     // The Duration of a CTS counts from the end of the frame, and that is also when receivers
     // enter the P-EDCA contention (see NeedNavUpdate). Enter first, so that the backoff

@@ -436,8 +436,8 @@ main(int argc, char* argv[])
      */
     uint32_t pedcaQsrcThreshold = 1;
     uint32_t pedcaPsrcThreshold = 1;
-    uint32_t pedcaDsAifsn = 1;
-    uint32_t pedcaCwDs = 7; // 3 is reserved by the draft -- see validation below
+    uint32_t pedcaDsAifsn = 2;
+    uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
     uint32_t pedcaStage2Aifsn = 1;
     uint32_t pedcaStage2CwMin = 3;
     uint32_t pedcaStage2CwMax = 7;

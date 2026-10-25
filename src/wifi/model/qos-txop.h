@@ -492,6 +492,10 @@ class QosTxop : public Txop
         PedcaPhase pedcaPhase{PedcaPhase::NORMAL}; //!< current P-EDCA phase
         Time pedcaStage2End{0};                    //!< end of the current P-EDCA contention
         EventId pedcaStage2Timeout;                //!< P-EDCA contention expiry event
+        bool pedcaDsCtsSender{false}; //!< true if this AC sent the DS-CTS opening the current
+                                      //!< Stage 2 (its PSRC was already incremented)
+        uint64_t pedcaRound{0};       //!< ID of the current/last Stage 2 (incremented on entry)
+        uint64_t pedcaLossRound{0};   //!< ID of the last Stage 2 for which a loss was accounted
     };
 
     void DoDispose() override;
@@ -541,11 +545,20 @@ class QosTxop : public Txop
      * @param linkId the ID of the given link
      */
     void PedcaStage2Timeout(uint8_t linkId);
+    /**
+     * Account for a lost P-EDCA contention: this AC took part in Stage 2 (it had frames to
+     * transmit) but did not obtain the TXOP. PSRC is incremented (unless this AC itself sent the
+     * DS-CTS, in which case it was already incremented when the DS-CTS was sent) and QSRC is
+     * incremented through UpdateFailedCw().
+     *
+     * @param linkId the ID of the given link
+     */
+    void PedcaStage2Lost(uint8_t linkId);
 
-    uint8_t m_pedcaQsrcThr{2};        //!< P-EDCA QSRC threshold
-    uint8_t m_pedcaPsrcThr{5};        //!< P-EDCA PSRC threshold
+    uint8_t m_pedcaQsrcThr{1};        //!< P-EDCA QSRC threshold
+    uint8_t m_pedcaPsrcThr{1};        //!< P-EDCA PSRC threshold
     uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
-    uint32_t m_pedcaCwDs{7};          //!< CWds: DSr is drawn in [0, CWds]
+    uint32_t m_pedcaCwDs{0};          //!< CWds: DSr is drawn in [0, CWds]
     uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
     uint32_t m_pedcaStage2CwMin{3};   //!< CWmin used by eligible STAs during Stage 2
     uint32_t m_pedcaStage2CwMax{7};   //!< CWmax used by eligible STAs during Stage 2

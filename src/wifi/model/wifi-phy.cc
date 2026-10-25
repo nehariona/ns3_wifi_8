@@ -1966,10 +1966,21 @@ uint64_t
 WifiPhy::GetSameContentPpduUid()
 {
     // Stations transmitting simultaneously start at the same slot boundary, up to propagation
-    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart, hence a 50 us bucket
-    // gives the same UID to simultaneous transmissions and distinct UIDs to successive ones.
-    return SAME_CONTENT_PPDU_UID_FLAG |
-           static_cast<uint64_t>(Simulator::Now().GetNanoSeconds() / 50'000);
+    // delays (ns). Successive P-EDCA DS-CTS are more than 100 us apart. All calls within
+    // 1 us of the first call of a round share the same UID; a call
+    // outside that window starts a new round. (Fixed absolute time buckets could split two
+    // simultaneous transmissions that straddle a bucket boundary.)
+    constexpr int64_t SAME_CONTENT_ROUND_WINDOW_NS = 1000;
+    static uint64_t roundId = 0;
+    static int64_t roundStartNs = -1;
+    const int64_t nowNs = Simulator::Now().GetNanoSeconds();
+    if (roundStartNs < 0 || nowNs < roundStartNs ||
+        nowNs - roundStartNs > SAME_CONTENT_ROUND_WINDOW_NS)
+    {
+        ++roundId;
+        roundStartNs = nowNs;
+    }
+    return SAME_CONTENT_PPDU_UID_FLAG | roundId;
 }
 
 void

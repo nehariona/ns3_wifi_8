@@ -39,8 +39,8 @@ BSS_RADIUS=5
 # assumed.
 PEDCA_QSRC_THR=1
 PEDCA_PSRC_THR=1
-PEDCA_DS_AIFSN=1
-PEDCA_CW_DS=7          # NOT 3: the draft reserves 3, see qos-txop.cc comment
+PEDCA_DS_AIFSN=2
+PEDCA_CW_DS=0          # NOT 3: the draft reserves 3, see qos-txop.cc comment
 PEDCA_STAGE2_AIFSN=2
 PEDCA_STAGE2_CWMIN=3
 PEDCA_STAGE2_CWMAX=7

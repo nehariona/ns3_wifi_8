@@ -1,3 +1,4 @@
+
 #!/bin/bash
 # Generate test coordinates and reference conversion coordinates for the
 # GeocentricTopocentricConversionTest.
