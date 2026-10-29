@@ -424,6 +424,15 @@ class QosTxop : public Txop
      * @return true if this AC is currently in the P-EDCA contention (Stage 2) on the given link
      */
     bool IsPedcaStage2(uint8_t linkId) const;
+        /**
+     * P-EDCA: if PSRC has reached the PSRC threshold, the packet that took part in the P-EDCA
+     * contention is dropped (it does not continue in EDCA): the head-of-line MPDU is removed
+     * from the queue, the DroppedMpdu trace is fired and QSRC, PSRC and CW are reset.
+     *
+     * @param linkId the ID of the given link
+     * @return true if an MPDU was dropped
+     */
+    bool PedcaDropIfPsrcLimitReached(uint8_t linkId);
     /**
      * @return the RA used to identify a DS-CTS frame
      */
@@ -546,6 +555,14 @@ class QosTxop : public Txop
      */
     void PedcaStage2Timeout(uint8_t linkId);
     /**
+     * Account for a lost P-EDCA contention: this AC took part in Stage 2 (it had frames to
+     * transmit) but did not obtain the TXOP. PSRC is incremented (unless this AC itself sent the
+     * DS-CTS, in which case it was already incremented when the DS-CTS was sent) and QSRC is
+     * incremented through UpdateFailedCw().
+     *
+     * @param linkId the ID of the given link
+     */
+        /**
      * Account for a lost P-EDCA contention: this AC took part in Stage 2 (it had frames to
      * transmit) but did not obtain the TXOP. PSRC is incremented (unless this AC itself sent the
      * DS-CTS, in which case it was already incremented when the DS-CTS was sent) and QSRC is

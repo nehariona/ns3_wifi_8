@@ -1980,7 +1980,7 @@ WifiPhy::GetSameContentPpduUid()
         ++roundId;
         roundStartNs = nowNs;
     }
-    return SAME_CONTENT_PPDU_UID_FLAG | roundId;
+    return SAME_CONTENT_PPDU_UID_FLAG;
 }
 
 void

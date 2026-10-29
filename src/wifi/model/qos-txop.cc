@@ -564,6 +564,34 @@ QosTxop::PedcaStage2Lost(uint8_t linkId)
                                                    << ": PSRC=" << GetPsrc(linkId)
                                                    << " QSRC=" << GetStaRetryCount(linkId)
                                                    << " cw=" << link.cw);
+
+    // a packet that crossed the PSRC threshold is dropped instead of continuing in EDCA
+    PedcaDropIfPsrcLimitReached(linkId);                                               
+}
+bool
+QosTxop::PedcaDropIfPsrcLimitReached(uint8_t linkId)
+{
+    NS_LOG_FUNCTION(this << +linkId);
+    if (GetPsrc(linkId) < m_pedcaPsrcThr)
+    {
+        return false;
+    }
+    auto mpdu = m_queue->PeekFirstAvailable(linkId);
+    if (!mpdu)
+    {
+        ResetCw(linkId); // nothing to drop; clear QSRC/PSRC
+        return false;
+    }
+    NS_LOG_DEBUG("PSRC=" << GetPsrc(linkId) << " reached threshold " << +m_pedcaPsrcThr
+                         << " on link " << +linkId << ": dropping " << *mpdu);
+    if (!m_droppedMpduCallback.IsNull())
+    {
+        m_droppedMpduCallback(WIFI_MAC_DROP_REACHED_RETRY_LIMIT, mpdu);
+    }
+    m_queue->DequeueIfQueued({mpdu});
+    // the next frame (if any) starts with fresh QSRC/PSRC/CW
+    ResetCw(linkId);
+    return true;
 }
 
 void

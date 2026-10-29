@@ -720,6 +720,7 @@ QosFrameExchangeManager::TransmissionSucceeded()
     // P-EDCA: the frame exchange initiated with an RTS in the P-EDCA contention succeeded (one or
     // more MPDUs delivered). Restore the EDCA parameters and resume the other ACs; the TXOP
     // itself continues below as a regular EDCA TXOP (only its initial frame had to be an RTS).
+   
     m_edca->ExitPedcaStage2(m_linkId);
 
     if (m_edca->GetTxopLimit(m_linkId).IsStrictlyPositive() &&
@@ -762,6 +763,7 @@ QosFrameExchangeManager::TransmissionFailed(bool forceCurrentCw)
     // RTS of another P-EDCA STA) or the frame exchange failed. Leave the P-EDCA contention
     // first, so that UpdateFailedCw() below applies the EDCA CWmin/CWmax. If PSRC still allows
     // it, the next access request goes back to DS-CTS contention.
+    const bool wasPedcaStage2 = m_edca->IsPedcaStage2(m_linkId);
     m_edca->ExitPedcaStage2(m_linkId);
 
     if (m_initialFrame)
@@ -772,6 +774,11 @@ QosFrameExchangeManager::TransmissionFailed(bool forceCurrentCw)
         if (!forceCurrentCw)
         {
             m_edca->UpdateFailedCw(m_linkId);
+        }
+        if (wasPedcaStage2)
+        {
+            // the P-EDCA RTS failed: a packet that crossed the PSRC threshold is dropped
+            m_edca->PedcaDropIfPsrcLimitReached(m_linkId);
         }
         NotifyChannelReleased(m_edca);
         m_edca = nullptr;
