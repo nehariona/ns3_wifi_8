@@ -34,16 +34,16 @@ set -euo pipefail
 
 # ---- Paths ---------------------------------------------------------------------
 PROGRAM="${PROGRAM:-scratch/pedca-txop-ratio-sweep}"   # same target as your sweep script
-OUT="${OUT:-fixing/exp1}"
+OUT="${OUT:-fixing/exp_try2}"
 
 # ---- Experiment 1 settings (from the experiment list) -----------------------------
 TRAFFIC_LIST="${TRAFFIC_LIST:-cbr poisson poissonBurst}"
 ADOPTION_LIST="${ADOPTION_LIST:-0 25 50 75 100}"      # % of VO STAs using P-EDCA
 N_VO=20; N_VI=4; N_BE=4; N_BK=4                       # 32 STAs, ratio 20:4:4:4
-LOAD_PER_AC="${LOAD_PER_AC:-12}"                      # Mbit/s per AC (fixed per-AC policy)
-SEEDS="${SEEDS:-1}"                           # RngSeed values
-RUNS="${RUNS:-1}"                                     # RngRun values per seed (1..RUNS)
-SIM_TIME="${SIM_TIME:-120}"
+LOAD_PER_AC="${LOAD_PER_AC:-8}"                      # Mbit/s per AC (fixed per-AC policy)
+SEEDS="${SEEDS:-1 2 3 4 5}"                           # RngSeed values
+RUNS="${RUNS:-1 2}"                                     # RngRun values per seed (1..RUNS)
+SIM_TIME="${SIM_TIME:-60}"
 WARMUP_TIME="${WARMUP_TIME:-5}"
 DRAIN_TIME="${DRAIN_TIME:-5}"
 JOBS="${JOBS:-8}"
@@ -57,7 +57,7 @@ BSS_RADIUS="${BSS_RADIUS:-5}"
 
 # ---- P-EDCA parameters (same values as your sweep script) ----------------------
 PEDCA_QSRC_THR="${PEDCA_QSRC_THR:-3}"
-PEDCA_PSRC_THR="${PEDCA_PSRC_THR:-4}"
+PEDCA_PSRC_THR="${PEDCA_PSRC_THR:-3}"
 PEDCA_DS_AIFSN="${PEDCA_DS_AIFSN:-2}"
 PEDCA_CW_DS="${PEDCA_CW_DS:-0}"
 PEDCA_STAGE2_AIFSN="${PEDCA_STAGE2_AIFSN:-2}"
