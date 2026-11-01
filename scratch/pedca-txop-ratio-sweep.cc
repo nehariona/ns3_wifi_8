@@ -64,6 +64,16 @@
  * in the patch -- verify them against your target draft before
  * publishing results, as noted throughout the patch's own comments.
  *
+ * PHY (Wi-Fi 8 / 802.11bn baseline):
+ *   802.11bn keeps the Wi-Fi 7 PHY envelope (2.4/5/6 GHz bands, 320 MHz max
+ *   width, 4096-QAM, up to 8 spatial streams, ~23 Gbps peak). ns-3 has no
+ *   dedicated 802.11bn PHY, so this scenario uses WIFI_STANDARD_80211be (EHT)
+ *   on a 320 MHz channel in the 6 GHz band (320 MHz does not exist in 2.4/5 GHz)
+ *   with EhtMcs13 (4096-QAM 5/6). Width, MCS, stream counts, channel and
+ *   aggregation are command-line options (--channelWidth, --dataMcs,
+ *   --staStreams, --apStreams, --channelNumber, --voMaxAmpduBytes).
+ *   Control frames stay on a legacy OFDM rate (OfdmRate24Mbps).
+ *
  * FlowMonitor, MAC retry counting, RNG handling, and CSV structure
  * otherwise follow edca-ratio-validation.cc exactly, with an added
  * PedcaDsCtsCounter (mirrors MacRetryCounter) that counts DS-CTS
@@ -545,6 +555,34 @@ PedcaDsCtsCounter::GetDsCtsForNode(uint32_t nodeId) const
  * --------------------------------------------------------------------------
  */
 
+/*
+ * Nominal EHT (802.11be / Wi-Fi 7, reused for Wi-Fi 8) PHY data rate in Mbps for a
+ * given MCS (0-13), channel width (20/40/80/160/320 MHz) and spatial-stream count,
+ * with 0.8 us GI (12.8 us symbol + 0.8 us GI = 13.6 us). Used only for CSV
+ * reporting and sanity checks -- ns-3 computes the real rate itself.
+ * e.g. MCS 13, 320 MHz, 8 SS -> ~23059 Mbps.
+ */
+double
+EhtDataRateMbps(uint32_t mcs, uint32_t widthMhz, uint32_t nss)
+{
+    static const double bitsPerSc[14] = {1, 2, 2, 4, 4, 6, 6, 6, 8, 8, 10, 10, 12, 12};
+    static const double coding[14] = {1.0 / 2, 1.0 / 2, 3.0 / 4, 1.0 / 2, 3.0 / 4,
+                                      2.0 / 3, 3.0 / 4, 5.0 / 6, 3.0 / 4, 5.0 / 6,
+                                      3.0 / 4, 5.0 / 6, 3.0 / 4, 5.0 / 6};
+    double dataSc = 0;
+    switch (widthMhz)
+    {
+    case 20: dataSc = 234; break;
+    case 40: dataSc = 468; break;
+    case 80: dataSc = 980; break;
+    case 160: dataSc = 1960; break;
+    case 320: dataSc = 3920; break;
+    default: NS_FATAL_ERROR("channelWidth must be 20, 40, 80, 160 or 320");
+    }
+    NS_ABORT_MSG_IF(mcs > 13, "dataMcs must be in [0,13]");
+    return dataSc * bitsPerSc[mcs] * coding[mcs] * nss / 13.6; // bits per us == Mbps
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -566,17 +604,29 @@ main(int argc, char* argv[])
     uint32_t payloadSize = 1024;
 
     /*
+     * PHY parameters (Wi-Fi 8 / 802.11bn baseline: 6 GHz, 320 MHz, 4096-QAM, 8 SS).
+     * staStreams defaults to 8 to reproduce the ~23 Gbps headline rate; realistic
+     * clients are usually 1-2 SS, so sweep it if you want a client-realistic study.
+     */
+    uint32_t channelWidth = 320;  // MHz: 20 / 40 / 80 / 160 / 320 (320 only in 6 GHz)
+    uint32_t channelNumber = 31;  // 6 GHz 320 MHz channel (centre 6105 MHz); 0 = ns-3 default
+    uint32_t dataMcs = 13;        // EhtMcs0..13; 13 = 4096-QAM 5/6
+    uint32_t staStreams = 8;      // spatial streams per STA (uplink rate driver)
+    uint32_t apStreams = 8;       // spatial streams at the AP
+    uint32_t voMaxAmpduBytes = 0; // AC_VO A-MPDU limit; 0 = no aggregation (see note below)
+
+    /*
      * P-EDCA (IEEE 802.11bn) parameters, applied to every station's
      * AC_VO EDCAF via Config::Set. Inert on AC_VO_LEGACY stations.
      * Defaults mirror the QosTxop attribute defaults in the patch --
      * verify against your target draft before publishing results.
      */
-    uint32_t pedcaQsrcThreshold = 1;
+    uint32_t pedcaQsrcThreshold = 2;
     uint32_t pedcaPsrcThreshold = 1;
     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
-    uint32_t pedcaStage2CwMin = 3;
+    uint32_t pedcaStage2CwMin = 7;
     uint32_t pedcaStage2CwMax = 7;
     // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
     // defaults), so the window stays consistent if you sweep AIFSN/CWmax
@@ -652,6 +702,16 @@ main(int argc, char* argv[])
     cmd.AddValue("nVi", "Number of AC_VI stations", nVi);
     cmd.AddValue("nVoLegacy", "Number of legacy (non-P-EDCA) AC_VO stations", nVoLegacy);
     cmd.AddValue("nVoPedca", "Number of P-EDCA-enabled AC_VO stations", nVoPedca);
+
+    cmd.AddValue("channelWidth", "Channel width in MHz (20/40/80/160/320)", channelWidth);
+    cmd.AddValue("channelNumber", "6 GHz channel number (0 = default for the width)", channelNumber);
+    cmd.AddValue("dataMcs", "EHT MCS index 0-13 used by ConstantRateWifiManager", dataMcs);
+    cmd.AddValue("staStreams", "Spatial streams per STA (1-8)", staStreams);
+    cmd.AddValue("apStreams", "Spatial streams at the AP (1-8)", apStreams);
+    cmd.AddValue("voMaxAmpduBytes",
+                 "Max A-MPDU size for AC_VO in bytes (0 = disabled). EHT aggregates heavily "
+                 "by default, which suppresses the retries P-EDCA reacts to",
+                 voMaxAmpduBytes);
 
     cmd.AddValue("pedcaQsrcThreshold",
                  "P-EDCA: minimum QSRC for AC_VO to be P-EDCA eligible",
@@ -776,6 +836,22 @@ main(int argc, char* argv[])
         NS_FATAL_ERROR("payloadSize must be > 0");
     }
 
+    if (channelWidth != 20 && channelWidth != 40 && channelWidth != 80 && channelWidth != 160 &&
+        channelWidth != 320)
+    {
+        NS_FATAL_ERROR("channelWidth must be 20, 40, 80, 160 or 320");
+    }
+
+    if (dataMcs > 13)
+    {
+        NS_FATAL_ERROR("dataMcs must be in [0,13]");
+    }
+
+    if (staStreams < 1 || staStreams > 8 || apStreams < 1 || apStreams > 8)
+    {
+        NS_FATAL_ERROR("staStreams and apStreams must be in [1,8]");
+    }
+
     if (perAcLoadMbps <= 0.0)
     {
         NS_FATAL_ERROR("perAcLoadMbps must be > 0");
@@ -870,10 +946,16 @@ main(int argc, char* argv[])
 
     channel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
 
+    // 6 GHz band: centre frequency = 5950 + 5 x channelNumber MHz (ch 31 -> 6105 MHz).
+    // For channelNumber == 0 (ns-3 default channel) the exact centre is not known here, so
+    // 6.105 GHz is used as an approximation; path-loss difference across the band is ~0.3 dB.
+    const double centreFreqHz =
+        (channelNumber != 0 ? 5950.0 + 5.0 * channelNumber : 6105.0) * 1e6;
+
     channel.AddPropagationLoss(
         "ns3::FriisPropagationLossModel",
         "Frequency",
-        DoubleValue(5.18e9));
+        DoubleValue(centreFreqHz));
 
     YansWifiPhyHelper phy;
 
@@ -884,8 +966,16 @@ main(int argc, char* argv[])
 
     phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
 
-    // Channel 36: 5 GHz, 20 MHz
-    phy.Set("ChannelSettings", StringValue("{36, 20, BAND_5GHZ, 0}"));
+    // 6 GHz band, configurable width (default 320 MHz, channel 31)
+    phy.Set("ChannelSettings",
+            StringValue("{" + std::to_string(channelNumber) + ", " +
+                        std::to_string(channelWidth) + ", BAND_6GHZ, 0}"));
+
+    // STA antennas / spatial streams. phy.Set() takes effect at Install() time, so the AP
+    // values are set again before the AP install below.
+    phy.Set("Antennas", UintegerValue(staStreams));
+    phy.Set("MaxSupportedTxSpatialStreams", UintegerValue(staStreams));
+    phy.Set("MaxSupportedRxSpatialStreams", UintegerValue(staStreams));
 
     // ======================================================================
     // Wi-Fi configuration
@@ -893,12 +983,17 @@ main(int argc, char* argv[])
 
     WifiHelper wifi;
 
-    wifi.SetStandard(WIFI_STANDARD_80211a);
+    // Wi-Fi 8 / 802.11bn PHY envelope == Wi-Fi 7 (EHT). If your patch adds a dedicated
+    // WIFI_STANDARD_80211bn enum, substitute it here.
+    wifi.SetStandard(WIFI_STANDARD_80211be);
+
+    const double phyDataRateMbps = EhtDataRateMbps(dataMcs, channelWidth, staStreams);
+    const double phyControlRateMbps = 24.0;
 
     wifi.SetRemoteStationManager(
         "ns3::ConstantRateWifiManager",
         "DataMode",
-        StringValue("OfdmRate54Mbps"),
+        StringValue("EhtMcs" + std::to_string(dataMcs)),
         "ControlMode",
         StringValue("OfdmRate24Mbps"));
 
@@ -974,7 +1069,18 @@ main(int argc, char* argv[])
         "EnableBeaconJitter",
         BooleanValue(false));
 
+    phy.Set("Antennas", UintegerValue(apStreams));
+    phy.Set("MaxSupportedTxSpatialStreams", UintegerValue(apStreams));
+    phy.Set("MaxSupportedRxSpatialStreams", UintegerValue(apStreams));
+
     NetDeviceContainer apDevice = wifi.Install(phy, mac, apNode);
+
+    // Aggregation. EHT enables very large A-MPDUs by default, so small AC_VO packets would
+    // be sent in big bursts: far fewer channel accesses, collisions and retries, which are
+    // exactly what QSRC/PSRC-triggered P-EDCA reacts to. Fix it explicitly and keep it
+    // identical across the adoption sweep.
+    Config::Set("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/VO_MaxAmpduSize",
+                UintegerValue(voMaxAmpduBytes));
 
     // ======================================================================
     // P-EDCA attributes
@@ -1481,6 +1587,13 @@ main(int argc, char* argv[])
             << "stage2RtsTransmissions,"
             << "apPedcaSupported,"
             << "sameContentMaxDelayNs,"
+            << "band,"
+            << "channelWidthMhz,"
+            << "channelNumber,"
+            << "dataMcs,"
+            << "staStreams,"
+            << "apStreams,"
+            << "voMaxAmpduBytes,"
             << "pcapEnabled\n";
     }
 
@@ -1596,7 +1709,7 @@ main(int argc, char* argv[])
             << (poissonBurst ? burstOffMean : 0.0) << ',' << (preserveMeanLoad ? 1 : 0) << ','
             << perStationLoadMbps[g] * peakFactor << ','
             << actualPerAcLoadMbps[g] * peakFactor * dutyCycle << ','
-            << payloadSize << ',' << 54 << ',' << 24 << ',' << simulationTime << ','
+            << payloadSize << ',' << phyDataRateMbps << ',' << phyControlRateMbps << ',' << simulationTime << ','
             << warmupTime << ',' << drainTime << ',' << rngSeed << ',' << rngRun << ','
             << pedcaQsrcThreshold << ',' << pedcaPsrcThreshold << ',' << pedcaDsAifsn << ','
             << pedcaCwDs << ',' << pedcaStage2Aifsn << ',' << pedcaStage2CwMin << ','
@@ -1608,7 +1721,9 @@ main(int argc, char* argv[])
             << agg.txBytes << ',' << agg.rxBytes << ',' << agg.lostPackets << ','
             << macAttempts << ',' << macRetries << ',' << dsCtsCount << ','
             << rtsPerGroup[g] << ',' << (apPedcaSupported ? 1 : 0) << ','
-            << sameContentMaxDelayNs << ','
+            << sameContentMaxDelayNs << ',' << "6GHz" << ',' << channelWidth << ','
+            << channelNumber << ',' << dataMcs << ',' << staStreams << ',' << apStreams << ','
+            << voMaxAmpduBytes << ','
             << (enablePcap ? 1 : 0) << '\n';
     }
 
