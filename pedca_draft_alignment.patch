@@ -1,0 +1,186 @@
+diff --git a/scratch/pedca-final.cc b/scratch/pedca-final.cc
+index 8bbecb0..b77fe94 100644
+--- a/scratch/pedca-final.cc
++++ b/scratch/pedca-final.cc
+@@ -572,12 +572,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
+     // defaults), so the window stays consistent if you sweep AIFSN/CWmax
+diff --git a/scratch/pedca-ratio-sweep.cc b/scratch/pedca-ratio-sweep.cc
+index 161a6b0..352ff19 100644
+--- a/scratch/pedca-ratio-sweep.cc
++++ b/scratch/pedca-ratio-sweep.cc
+@@ -454,12 +454,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
+     // defaults), so the window stays consistent if you sweep AIFSN/CWmax
+diff --git a/scratch/pedca-ratio-validation-poisson-burst.cc b/scratch/pedca-ratio-validation-poisson-burst.cc
+index a4820e5..1a4d28e 100644
+--- a/scratch/pedca-ratio-validation-poisson-burst.cc
++++ b/scratch/pedca-ratio-validation-poisson-burst.cc
+@@ -434,12 +434,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 1;
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     double pedcaStage2WindowUs = 97.0;
+ 
+diff --git a/scratch/pedca-ratio-validation.cc b/scratch/pedca-ratio-validation.cc
+index c990a82..64539d6 100644
+--- a/scratch/pedca-ratio-validation.cc
++++ b/scratch/pedca-ratio-validation.cc
+@@ -454,12 +454,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
+     // defaults), so the window stays consistent if you sweep AIFSN/CWmax
+diff --git a/scratch/pedca-txop-ratio-sweep.cc b/scratch/pedca-txop-ratio-sweep.cc
+index 2be8ad3..72f19d7 100644
+--- a/scratch/pedca-txop-ratio-sweep.cc
++++ b/scratch/pedca-txop-ratio-sweep.cc
+@@ -571,12 +571,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;      // DSAIFS = SIFS + (2 + DSr) x slot in the draft
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 2;  // AIFS2 = 34 us in the draft figure
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     // 0 = let the patch compute SIFS + (Stage-2 AIFSN + Stage-2 CWmax) x slot (97 us with the
+     // defaults), so the window stays consistent if you sweep AIFSN/CWmax
+diff --git a/scratch/pedca-validation-poisson.cc b/scratch/pedca-validation-poisson.cc
+index e71a207..1e2f8dd 100644
+--- a/scratch/pedca-validation-poisson.cc
++++ b/scratch/pedca-validation-poisson.cc
+@@ -562,12 +562,12 @@ main(int argc, char* argv[])
+      * Defaults mirror the QosTxop attribute defaults in the patch --
+      * verify against your target draft before publishing results.
+      */
+-    uint32_t pedcaQsrcThreshold = 1;
++    uint32_t pedcaQsrcThreshold = 2;
+     uint32_t pedcaPsrcThreshold = 1;
+     uint32_t pedcaDsAifsn = 2;
+     uint32_t pedcaCwDs = 0; // DS-CTS CWmin = CWmax = 0 (3 is reserved by the draft -- see validation below)
+     uint32_t pedcaStage2Aifsn = 1;
+-    uint32_t pedcaStage2CwMin = 3;
++    uint32_t pedcaStage2CwMin = 7;
+     uint32_t pedcaStage2CwMax = 7;
+     double pedcaStage2WindowUs = 97.0;
+ 
+diff --git a/src/wifi/model/qos-txop.cc b/src/wifi/model/qos-txop.cc
+index 1421e82..d3e0832 100644
+--- a/src/wifi/model/qos-txop.cc
++++ b/src/wifi/model/qos-txop.cc
+@@ -60,7 +60,7 @@ QosTxop::GetTypeId()
+                           MakeBooleanChecker())
+             .AddAttribute("PEdcaQsrcThreshold",
+                           "P-EDCA: minimum QSRC for the AC to be P-EDCA eligible (0 is reserved).",
+-                          UintegerValue(1),
++                          UintegerValue(2),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaQsrcThr),
+                           MakeUintegerChecker<uint8_t>(1))
+             .AddAttribute("PEdcaPsrcThreshold",
+@@ -89,9 +89,9 @@ QosTxop::GetTypeId()
+                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2Aifsn),
+                           MakeUintegerChecker<uint8_t>(1, 15))
+             .AddAttribute("PEdcaStage2CwMin",
+-                          "P-EDCA: CWmin used by eligible STAs inside Stage 2. CW is set to "
+-                          "min(CWmax, 2^QSRC x (CWmin + 1) - 1) when Stage 2 starts.",
+-                          UintegerValue(3),
++                          "P-EDCA: CWmin used by eligible STAs inside Stage 2. CW is "
++                          "initialized to CWmin when the P-EDCA contention starts.",
++                          UintegerValue(7),
+                           MakeUintegerAccessor(&QosTxop::m_pedcaStage2CwMin),
+                           MakeUintegerChecker<uint32_t>(0, 1023))
+             .AddAttribute("PEdcaStage2CwMax",
+@@ -482,7 +482,9 @@ QosTxop::EnterPedcaStage2(uint8_t linkId, Time window)
+     ++link.pedcaRound;
+     link.pedcaPhase = QosLinkEntity::PedcaPhase::STAGE2;
+     link.pedcaStage2End = Simulator::Now() + window;
+-    SetPedcaCw(linkId); // Stage-2 CWmin/CWmax now apply
++    // Draft 37.5: CW[AC_VO] is initialized to CWmin[AC_VO] when the P-EDCA contention starts
++    link.cw = m_pedcaStage2CwMin;
++    m_cwTrace(link.cw, linkId);
+     NS_LOG_DEBUG("Enter P-EDCA Stage 2: link=" << +linkId << " round=" << link.pedcaRound
+                                                << " role=" << (link.pedcaDsCtsSender ? "DS-CTS sender" : "receiver")
+                                                << " window=" << window.As(Time::US)
+@@ -552,11 +554,9 @@ QosTxop::PedcaStage2Lost(uint8_t linkId)
+     NS_ASSERT_MSG(link.pedcaLossRound != link.pedcaRound,
+                   "P-EDCA loss accounted twice for round " << link.pedcaRound);
+     link.pedcaLossRound = link.pedcaRound;
+-    if (!link.pedcaDsCtsSender)
+-    {
+-        // the DS-CTS sender already incremented PSRC when it sent the DS-CTS
+-        IncrementPsrc(linkId);
+-    }
++    // Draft 37.5: PSRC is incremented only with every transmission of a DS-CTS frame (done in
++    // QosFrameExchangeManager::SendPedcaDsCts), so a STA that only received the DS-CTS does
++    // not touch PSRC here
+     // QSRC++ (and CW update, which ExitPedcaStage2() recomputes with the EDCA CWmin/CWmax)
+     UpdateFailedCw(linkId);
+     NS_LOG_DEBUG("Lost P-EDCA contention on link " << +linkId << " round=" << link.pedcaRound
+diff --git a/src/wifi/model/qos-txop.h b/src/wifi/model/qos-txop.h
+index dae0c55..9c8baea 100644
+--- a/src/wifi/model/qos-txop.h
++++ b/src/wifi/model/qos-txop.h
+@@ -555,12 +555,12 @@ class QosTxop : public Txop
+      */
+     void PedcaStage2Lost(uint8_t linkId);
+ 
+-    uint8_t m_pedcaQsrcThr{1};        //!< P-EDCA QSRC threshold
++    uint8_t m_pedcaQsrcThr{2};        //!< P-EDCA QSRC threshold
+     uint8_t m_pedcaPsrcThr{1};        //!< P-EDCA PSRC threshold
+     uint8_t m_pedcaDsAifsn{2};        //!< AIFSN used while contending to send a DS-CTS
+     uint32_t m_pedcaCwDs{0};          //!< CWds: DSr is drawn in [0, CWds]
+     uint8_t m_pedcaStage2Aifsn{2};    //!< AIFSN used by eligible STAs during Stage 2
+-    uint32_t m_pedcaStage2CwMin{3};   //!< CWmin used by eligible STAs during Stage 2
++    uint32_t m_pedcaStage2CwMin{7};   //!< CWmin used by eligible STAs during Stage 2
+     uint32_t m_pedcaStage2CwMax{7};   //!< CWmax used by eligible STAs during Stage 2
+     Time m_pedcaStage2Window{0};      //!< P-EDCA contention duration (0: computed)
+     Mac48Address m_pedcaDsCtsAddress; //!< the RA used to identify a DS-CTS frame
+     
