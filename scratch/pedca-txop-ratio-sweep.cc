@@ -841,6 +841,15 @@ main(int argc, char* argv[])
     {
         NS_FATAL_ERROR("channelWidth must be 20, 40, 80, 160 or 320");
     }
+    // Channel 31 is only a valid 6 GHz channel number for 320 MHz; narrower widths use
+    // different numbering, so let ns-3 pick its default channel for them.
+    if (channelWidth != 320 && channelNumber == 31)
+    {
+        std::cerr << "Note: channelNumber 31 is 320 MHz only; using channelNumber=0 (default) "
+                     "for channelWidth="
+                  << channelWidth << "\n";
+        channelNumber = 0;
+    }
 
     if (dataMcs > 13)
     {
@@ -1074,6 +1083,11 @@ main(int argc, char* argv[])
     phy.Set("MaxSupportedRxSpatialStreams", UintegerValue(apStreams));
 
     NetDeviceContainer apDevice = wifi.Install(phy, mac, apNode);
+
+    // 0.8 us guard interval (ns-3's default is 3.2 us). EhtDataRateMbps() and the 802.11bn
+    // UHR-MCS table both assume 0.8 us, so set it explicitly on every device.
+    Config::Set("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/HeConfiguration/GuardInterval",
+                TimeValue(NanoSeconds(800)));
 
     // Aggregation. EHT enables very large A-MPDUs by default, so small AC_VO packets would
     // be sent in big bursts: far fewer channel accesses, collisions and retries, which are

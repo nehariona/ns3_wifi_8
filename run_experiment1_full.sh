@@ -34,15 +34,15 @@ set -euo pipefail
 
 # ---- Paths ---------------------------------------------------------------------
 PROGRAM="${PROGRAM:-scratch/pedca-txop-ratio-sweep}"   # same target as your sweep script
-OUT="${OUT:-fixing/exp_try2}"
+OUT="${OUT:-3rd_nov_320mhz/exp1}"
 
 # ---- Experiment 1 settings (from the experiment list) -----------------------------
 TRAFFIC_LIST="${TRAFFIC_LIST:-cbr poisson poissonBurst}"
 ADOPTION_LIST="${ADOPTION_LIST:-0 25 50 75 100}"      # % of VO STAs using P-EDCA
 N_VO=20; N_VI=4; N_BE=4; N_BK=4                       # 32 STAs, ratio 20:4:4:4
-LOAD_PER_AC="${LOAD_PER_AC:-8}"                      # Mbit/s per AC (fixed per-AC policy)
-SEEDS="${SEEDS:-1 2 3 4 5}"                           # RngSeed values
-RUNS="${RUNS:-1 2}"                                     # RngRun values per seed (1..RUNS)
+LOAD_PER_AC="${LOAD_PER_AC:-8}"                     # Mbit/s per AC (fixed per-AC policy)
+SEEDS="${SEEDS:-1 2 3}"                           # RngSeed values
+RUNS="${RUNS:-1}"                                     # RngRun values per seed (1..RUNS)
 SIM_TIME="${SIM_TIME:-60}"
 WARMUP_TIME="${WARMUP_TIME:-5}"
 DRAIN_TIME="${DRAIN_TIME:-5}"
@@ -265,7 +265,15 @@ PY
     echo "analyse_pedca.py not found in $(pwd): skipping analysis (raw CSVs are in $OUT/<traffic>/raw)."
   fi
 fi
-
+# ---- Summary CSVs + graphs (own step: independent of analyse_pedca.py) ----------
+if [[ "$ANALYSE" == 1 ]]; then
+  if [[ -f exp1_summarise_plot.py ]]; then
+    echo; echo "Summarising and plotting ..."
+    python3 exp1_summarise_plot.py "$OUT" || echo "  (summary/plot step failed)"
+  else
+    echo "exp1_summarise_plot.py not found in $(pwd): skipping summary CSVs and graphs."
+  fi
+fi
 cat > "$OUT/README.txt" <<R
 Experiment 1 - P-EDCA adoption sweep
   config/    run settings, scenario table, build log
@@ -273,9 +281,10 @@ Experiment 1 - P-EDCA adoption sweep
                        replicate = (seed index - 1) * runs-per-seed + run   (same replicate = same random traffic
                        at every adoption level, so comparisons are paired)
   <traffic>/logs/      console output of every run
-  <traffic>/analysis/  summary_mean_ci.csv, paired_vs_baseline.csv, paired_pedca_vs_legacy.csv, plots, goals_check.txt
-  summary/             the three traffic types combined
+  <traffic>/analysis/  exp1_summary_mean_ci.csv, exp1_paired_vs_0pct.csv, plots/*.png
+  summary/             exp1_summary_mean_ci_all_traffic.csv, exp1_paired_vs_0pct_all_traffic.csv, plots/*.png
   failed_runs.txt      empty if every run succeeded
+
 R
 echo
 echo "Experiment 1 finished: $OUT"
